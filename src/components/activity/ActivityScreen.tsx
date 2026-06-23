@@ -11,7 +11,7 @@ import {
   MicrophoneButton,
   ProgressIndicator,
 } from '@/components/child-ui';
-import { ComponentSizes, Radii, SemanticColors, Spacing, Typography } from '@/theme';
+import { BrandColors, ComponentSizes, Radii, SemanticColors, Spacing, Typography } from '@/theme';
 
 import type { ActivityHotspot, ActivityScreenProps, ActivityScreenVisualState } from './types';
 
@@ -47,6 +47,9 @@ function toPercentage(value: number): DimensionValue {
 }
 
 function HotspotOverlay({ hotspot, onPress }: { hotspot: ActivityHotspot; onPress: () => void }) {
+  const { width } = useWindowDimensions();
+  const isCompact = width < 480;
+
   return (
     <Pressable
       accessibilityHint="Double tap to ask for a clue about this part of the picture."
@@ -63,6 +66,9 @@ function HotspotOverlay({ hotspot, onPress }: { hotspot: ActivityHotspot; onPres
         },
         pressed && styles.hotspotPressed,
       ]}>
+      <View style={[styles.hotspotBadge, isCompact && styles.hotspotBadgeCompact]}>
+        <Text style={[styles.hotspotBadgeText, isCompact && styles.hotspotBadgeTextCompact]}>?</Text>
+      </View>
       <Text numberOfLines={2} style={styles.hotspotLabel}>
         {hotspot.label}
       </Text>
@@ -185,19 +191,58 @@ const styles = StyleSheet.create({
   },
   hotspot: {
     alignItems: 'center',
-    backgroundColor: 'rgba(255, 249, 241, 0.65)',
-    borderColor: SemanticColors.focus,
+    backgroundColor: 'rgba(255, 249, 241, 0.88)',
+    borderColor: BrandColors.tangerine,
     borderRadius: Radii.medium,
-    borderWidth: Spacing.half,
+    borderWidth: Spacing.one,
+    elevation: 4,
     justifyContent: 'center',
     padding: Spacing.one,
     position: 'absolute',
+    shadowColor: BrandColors.marsala,
+    shadowOffset: { height: Spacing.one, width: 0 },
+    shadowOpacity: 0.25,
+    shadowRadius: Spacing.two,
   },
   hotspotPressed: {
-    backgroundColor: 'rgba(255, 240, 217, 0.9)',
+    backgroundColor: 'rgba(253, 214, 82, 0.96)',
+  },
+  hotspotBadge: {
+    alignItems: 'center',
+    backgroundColor: BrandColors.tangerine,
+    borderColor: BrandColors.marsala,
+    borderRadius: Radii.pill,
+    borderWidth: Spacing.half,
+    elevation: 5,
+    height: 44,
+    justifyContent: 'center',
+    left: '50%',
+    marginLeft: -22,
+    position: 'absolute',
+    shadowColor: BrandColors.marsala,
+    shadowOffset: { height: Spacing.one, width: 0 },
+    shadowOpacity: 0.3,
+    shadowRadius: Spacing.one,
+    top: -Spacing.five,
+    width: 44,
+    zIndex: 1,
+  },
+  hotspotBadgeText: {
+    ...Typography.headingSmall,
+    color: SemanticColors.surface,
+    lineHeight: 30,
+  },
+  hotspotBadgeCompact: {
+    height: 32,
+    marginLeft: -16,
+    width: 32,
+  },
+  hotspotBadgeTextCompact: {
+    fontSize: 20,
+    lineHeight: 24,
   },
   hotspotLabel: {
-    ...Typography.label,
+    ...Typography.bodyStrong,
     color: SemanticColors.primaryText,
     textAlign: 'center',
   },

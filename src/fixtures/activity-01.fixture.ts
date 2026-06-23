@@ -17,7 +17,7 @@ export const activity01DevelopmentFixture: ActivityScreenProps = {
   hotspots: [
     {
       id: 'temporary-picture-clue',
-      label: 'Try a picture clue',
+      label: 'Tap for clue',
       x: 0.18,
       y: 0.2,
       width: 0.3,
