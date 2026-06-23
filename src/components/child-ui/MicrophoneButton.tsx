@@ -10,6 +10,7 @@ export type MicrophoneButtonProps = {
   state?: MicrophoneButtonState;
   onPress?: () => void;
   accessibilityLabel?: string;
+  layout?: 'default' | 'primary';
 };
 
 const stateContent: Record<
@@ -49,7 +50,7 @@ const stateContent: Record<
   },
 };
 
-export function MicrophoneButton({ state = 'idle', onPress, accessibilityLabel }: MicrophoneButtonProps) {
+export function MicrophoneButton({ state = 'idle', onPress, accessibilityLabel, layout = 'default' }: MicrophoneButtonProps) {
   const content = stateContent[state];
   const isDisabled = state === 'disabled' || state === 'processing';
 
@@ -61,13 +62,13 @@ export function MicrophoneButton({ state = 'idle', onPress, accessibilityLabel }
       accessibilityState={{ busy: state === 'processing', disabled: isDisabled }}
       disabled={isDisabled}
       onPress={onPress}
-      style={({ pressed }) => [styles.button, styles[state], pressed && !isDisabled && styles.pressed]}>
-      <View style={styles.iconCircle}>
+      style={({ pressed }) => [styles.button, styles[state], layout === 'primary' && styles.primaryButton, pressed && !isDisabled && styles.pressed]}>
+      <View style={[styles.iconCircle, layout === 'primary' && styles.primaryIconCircle]}>
         {content.imageSource ? <Image accessible={false} resizeMode="contain" source={content.imageSource} style={styles.assetIcon} /> : <Text style={styles.icon}>{content.icon}</Text>}
       </View>
-      <View style={styles.copy}>
-        <Text style={styles.label}>{content.label}</Text>
-        <Text style={styles.helperText}>{content.helperText}</Text>
+      <View style={[styles.copy, layout === 'primary' && styles.primaryCopy]}>
+        <Text style={[styles.label, layout === 'primary' && styles.primaryLabel]}>{content.label}</Text>
+        {layout === 'default' ? <Text style={styles.helperText}>{content.helperText}</Text> : null}
       </View>
     </Pressable>
   );
@@ -106,6 +107,16 @@ const styles = StyleSheet.create({
   pressed: {
     opacity: 0.8,
   },
+  primaryButton: {
+    alignSelf: 'center',
+    backgroundColor: 'transparent',
+    borderWidth: 0,
+    flexDirection: 'column',
+    gap: Spacing.one,
+    minHeight: 136,
+    minWidth: 144,
+    padding: 0,
+  },
   iconCircle: {
     alignItems: 'center',
     backgroundColor: SemanticColors.surface,
@@ -113,6 +124,13 @@ const styles = StyleSheet.create({
     height: ComponentSizes.microphoneButton,
     justifyContent: 'center',
     width: ComponentSizes.microphoneButton,
+  },
+  primaryIconCircle: {
+    backgroundColor: BrandColors.tangerine,
+    borderColor: BrandColors.marsala,
+    borderWidth: Spacing.half,
+    height: 104,
+    width: 104,
   },
   icon: {
     ...Typography.heading,
@@ -125,9 +143,15 @@ const styles = StyleSheet.create({
     flex: 1,
     gap: Spacing.half,
   },
+  primaryCopy: {
+    flex: 0,
+  },
   label: {
     ...Typography.status,
     color: SemanticColors.primaryText,
+  },
+  primaryLabel: {
+    textAlign: 'center',
   },
   helperText: {
     ...Typography.bodySmall,

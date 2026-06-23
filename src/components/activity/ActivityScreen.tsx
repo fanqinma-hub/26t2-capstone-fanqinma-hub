@@ -1,4 +1,4 @@
-import { Image, Pressable, SafeAreaView, ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
+import { Image, Pressable, SafeAreaView, ScrollView, StyleSheet, Text, View } from 'react-native';
 import type { DimensionValue } from 'react-native';
 
 import {
@@ -31,7 +31,6 @@ export const activityScreenVisualStatePresentation: Record<ActivityScreenVisualS
   reprompt: { dialogueVariant: 'gentle', listeningState: 'reprompt', previewLabel: 'Try again' },
   tapHelpAvailable: {
     dialogueVariant: 'gentle',
-    listeningState: 'tapHelpAvailable',
     previewLabel: 'Help is available',
     showHotspots: true,
   },
@@ -47,9 +46,6 @@ function toPercentage(value: number): DimensionValue {
 }
 
 function HotspotOverlay({ hotspot, onPress }: { hotspot: ActivityHotspot; onPress: () => void }) {
-  const { width } = useWindowDimensions();
-  const isCompact = width < 480;
-
   return (
     <Pressable
       accessibilityHint="Double tap to ask for a clue about this part of the picture."
@@ -66,11 +62,8 @@ function HotspotOverlay({ hotspot, onPress }: { hotspot: ActivityHotspot; onPres
         },
         pressed && styles.hotspotPressed,
       ]}>
-      <View style={[styles.hotspotBadge, isCompact && styles.hotspotBadgeCompact]}>
-        <Text style={[styles.hotspotBadgeText, isCompact && styles.hotspotBadgeTextCompact]}>?</Text>
-      </View>
       <Text numberOfLines={2} style={styles.hotspotLabel}>
-        {hotspot.label}
+        <Text style={styles.hotspotQuestion}>?</Text> {hotspot.label}
       </Text>
     </Pressable>
   );
@@ -90,9 +83,7 @@ export function ActivityScreen({
   onMicrophonePress,
   onHotspotPress,
 }: ActivityScreenProps) {
-  const { width } = useWindowDimensions();
   const presentation = activityScreenVisualStatePresentation[visualState];
-  const isWideLayout = width >= 720;
   const showHotspots = Boolean(presentation.showHotspots && hotspots?.length && onHotspotPress);
   const showMicrophone = presentation.showMicrophone ?? true;
   const shownFeedback = presentation.feedbackVariant && feedback?.variant === presentation.feedbackVariant ? feedback : undefined;
@@ -122,15 +113,15 @@ export function ActivityScreen({
           </View>
 
           {presentation.listeningState || showMicrophone ? (
-            <View style={[styles.controls, isWideLayout && styles.controlsWide]}>
+            <View style={styles.controls}>
               {presentation.listeningState ? (
                 <View style={styles.controlItem}>
                   <ListeningIndicator state={presentation.listeningState} />
                 </View>
               ) : null}
               {showMicrophone ? (
-                <View style={styles.controlItem}>
-                  <MicrophoneButton onPress={onMicrophonePress} state={microphoneState} />
+                <View style={styles.microphoneControl}>
+                  <MicrophoneButton layout="primary" onPress={onMicrophonePress} state={microphoneState} />
                 </View>
               ) : null}
             </View>
@@ -191,70 +182,35 @@ const styles = StyleSheet.create({
   },
   hotspot: {
     alignItems: 'center',
-    backgroundColor: 'rgba(255, 249, 241, 0.88)',
+    backgroundColor: 'rgba(255, 249, 241, 0.7)',
     borderColor: BrandColors.tangerine,
     borderRadius: Radii.medium,
-    borderWidth: Spacing.one,
-    elevation: 4,
+    borderWidth: Spacing.half,
     justifyContent: 'center',
     padding: Spacing.one,
     position: 'absolute',
-    shadowColor: BrandColors.marsala,
-    shadowOffset: { height: Spacing.one, width: 0 },
-    shadowOpacity: 0.25,
-    shadowRadius: Spacing.two,
   },
   hotspotPressed: {
-    backgroundColor: 'rgba(253, 214, 82, 0.96)',
-  },
-  hotspotBadge: {
-    alignItems: 'center',
-    backgroundColor: BrandColors.tangerine,
-    borderColor: BrandColors.marsala,
-    borderRadius: Radii.pill,
-    borderWidth: Spacing.half,
-    elevation: 5,
-    height: 44,
-    justifyContent: 'center',
-    left: '50%',
-    marginLeft: -22,
-    position: 'absolute',
-    shadowColor: BrandColors.marsala,
-    shadowOffset: { height: Spacing.one, width: 0 },
-    shadowOpacity: 0.3,
-    shadowRadius: Spacing.one,
-    top: -Spacing.five,
-    width: 44,
-    zIndex: 1,
-  },
-  hotspotBadgeText: {
-    ...Typography.headingSmall,
-    color: SemanticColors.surface,
-    lineHeight: 30,
-  },
-  hotspotBadgeCompact: {
-    height: 32,
-    marginLeft: -16,
-    width: 32,
-  },
-  hotspotBadgeTextCompact: {
-    fontSize: 20,
-    lineHeight: 24,
+    backgroundColor: 'rgba(255, 240, 217, 0.8)',
   },
   hotspotLabel: {
-    ...Typography.bodyStrong,
+    ...Typography.label,
     color: SemanticColors.primaryText,
     textAlign: 'center',
   },
+  hotspotQuestion: {
+    ...Typography.bodyStrong,
+    color: SemanticColors.error,
+  },
   controls: {
+    alignItems: 'center',
     gap: Spacing.two,
   },
-  controlsWide: {
-    alignItems: 'stretch',
-    flexDirection: 'row',
-  },
   controlItem: {
-    flex: 1,
+    width: '100%',
+  },
+  microphoneControl: {
+    alignSelf: 'center',
   },
   activityIdentifier: {
     ...Typography.bodySmall,
