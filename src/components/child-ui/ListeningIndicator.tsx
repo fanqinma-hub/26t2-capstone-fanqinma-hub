@@ -1,5 +1,6 @@
-import { StyleSheet, Text, View } from 'react-native';
+import { Image, StyleSheet, Text, View } from 'react-native';
 
+import { clientIconAssets } from '@/constants/client-assets';
 import { BrandColors, Radii, SemanticColors, Spacing, Typography } from '@/theme';
 
 export type ListeningIndicatorState =
@@ -16,7 +17,7 @@ export type ListeningIndicatorProps = {
   accessibilityLabel?: string;
 };
 
-const stateContent: Record<ListeningIndicatorState, { icon: string; title: string; description: string }> = {
+const stateContent: Record<ListeningIndicatorState, { icon: string; imageSource?: number; title: string; description: string }> = {
   listening: {
     icon: '👂',
     title: 'Listening',
@@ -44,6 +45,7 @@ const stateContent: Record<ListeningIndicatorState, { icon: string; title: strin
   },
   processing: {
     icon: '💭',
+    imageSource: clientIconAssets.thinking.source as number,
     title: 'Thinking',
     description: 'Please wait for the next prompt.',
   },
@@ -59,7 +61,7 @@ export function ListeningIndicator({ state, accessibilityLabel }: ListeningIndic
 
   return (
     <View accessible accessibilityLabel={accessibilityLabel ?? `${content.title}. ${content.description}`} style={[styles.container, styles[state]]}>
-      <Text style={styles.icon}>{content.icon}</Text>
+      {content.imageSource ? <Image accessible={false} resizeMode="contain" source={content.imageSource} style={styles.assetIcon} /> : <Text style={styles.icon}>{content.icon}</Text>}
       <View style={styles.copy}>
         <Text style={styles.title}>{content.title}</Text>
         <Text style={styles.description}>{content.description}</Text>
@@ -107,6 +109,10 @@ const styles = StyleSheet.create({
   },
   icon: {
     ...Typography.headingSmall,
+  },
+  assetIcon: {
+    height: 44,
+    width: 44,
   },
   copy: {
     flex: 1,

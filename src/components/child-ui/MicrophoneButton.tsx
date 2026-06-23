@@ -1,5 +1,6 @@
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
 
+import { clientIconAssets } from '@/constants/client-assets';
 import { BrandColors, ComponentSizes, Radii, SemanticColors, Spacing, Typography } from '@/theme';
 
 export type MicrophoneButtonState = 'idle' | 'listening' | 'processing' | 'disabled' | 'error';
@@ -12,7 +13,7 @@ export type MicrophoneButtonProps = {
 
 const stateContent: Record<
   MicrophoneButtonState,
-  { icon: string; label: string; helperText: string; accessibilityHint: string }
+  { icon: string; imageSource?: number; label: string; helperText: string; accessibilityHint: string }
 > = {
   idle: {
     icon: '🎤',
@@ -28,6 +29,7 @@ const stateContent: Record<
   },
   processing: {
     icon: '💭',
+    imageSource: clientIconAssets.thinking.source as number,
     label: 'Thinking…',
     helperText: 'Please wait for the next prompt.',
     accessibilityHint: 'The app is processing your response.',
@@ -60,7 +62,7 @@ export function MicrophoneButton({ state = 'idle', onPress, accessibilityLabel }
       onPress={onPress}
       style={({ pressed }) => [styles.button, styles[state], pressed && !isDisabled && styles.pressed]}>
       <View style={styles.iconCircle}>
-        <Text style={styles.icon}>{content.icon}</Text>
+        {content.imageSource ? <Image accessible={false} resizeMode="contain" source={content.imageSource} style={styles.assetIcon} /> : <Text style={styles.icon}>{content.icon}</Text>}
       </View>
       <View style={styles.copy}>
         <Text style={styles.label}>{content.label}</Text>
@@ -113,6 +115,10 @@ const styles = StyleSheet.create({
   },
   icon: {
     ...Typography.heading,
+  },
+  assetIcon: {
+    height: 56,
+    width: 56,
   },
   copy: {
     flex: 1,
