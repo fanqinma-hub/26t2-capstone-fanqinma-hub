@@ -14,13 +14,13 @@ import { ComponentSizes, Radii, SemanticColors, Spacing, Typography } from '@/th
 
 import type { ActivityHotspot, ActivityScreenProps, ActivityScreenVisualState } from './types';
 
-type VisualStatePresentation = {
+export type ActivityScreenVisualStatePresentation = {
   dialogueVariant: KoolDialogueVariant;
   listeningState?: ListeningIndicatorState;
   statusText: string;
 };
 
-const visualStatePresentation: Record<ActivityScreenVisualState, VisualStatePresentation> = {
+export const activityScreenVisualStatePresentation: Record<ActivityScreenVisualState, ActivityScreenVisualStatePresentation> = {
   prompt: { dialogueVariant: 'prompt', statusText: 'Ready for your answer' },
   listening: { dialogueVariant: 'prompt', listeningState: 'listening', statusText: 'Listening' },
   gentleCue: { dialogueVariant: 'gentle', listeningState: 'gentleCue', statusText: 'Here is a clue' },
@@ -76,7 +76,7 @@ export function ActivityScreen({
   onHotspotPress,
 }: ActivityScreenProps) {
   const { width } = useWindowDimensions();
-  const presentation = visualStatePresentation[visualState];
+  const presentation = activityScreenVisualStatePresentation[visualState];
   const isWideLayout = width >= 720;
   const showHotspots = Boolean(hotspots?.length && onHotspotPress);
 
@@ -97,7 +97,7 @@ export function ActivityScreen({
           <View accessibilityLabel={`${title} picture`} style={styles.sceneFrame}>
             <Image accessible accessibilityLabel={`${title} scene`} resizeMode="contain" source={sceneSource} style={styles.sceneImage} />
             {showHotspots ? (
-              <View pointerEvents="box-none" style={styles.hotspotLayer}>
+              <View style={styles.hotspotLayer}>
                 {hotspots?.map((hotspot) => (
                   <HotspotOverlay key={hotspot.id} hotspot={hotspot} onPress={() => onHotspotPress?.(hotspot.id)} />
                 ))}
@@ -171,6 +171,7 @@ const styles = StyleSheet.create({
   },
   hotspotLayer: {
     ...StyleSheet.absoluteFill,
+    pointerEvents: 'box-none',
   },
   hotspot: {
     alignItems: 'center',
