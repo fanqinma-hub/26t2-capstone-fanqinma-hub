@@ -85,9 +85,15 @@ export default function UiPreviewScreen() {
 
           return (
             <View key={state} style={styles.activityState}>
-              <Text style={styles.activityStateName}>{presentation.statusText}</Text>
-              <KoolDialogue message="What can you see in this picture?" variant={presentation.dialogueVariant} />
+              <Text style={styles.activityStateName}>{presentation.previewLabel}</Text>
+              {presentation.dialogueVariant ? <KoolDialogue message="What can you see in this picture?" variant={presentation.dialogueVariant} /> : null}
               {presentation.listeningState ? <ListeningIndicator state={presentation.listeningState} /> : null}
+              {presentation.feedbackVariant ? (
+                <FeedbackBubble
+                  message={presentation.feedbackVariant === 'success' ? 'You did it!' : 'Please try once more.'}
+                  variant={presentation.feedbackVariant}
+                />
+              ) : null}
             </View>
           );
         })}

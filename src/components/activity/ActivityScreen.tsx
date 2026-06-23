@@ -3,6 +3,7 @@ import type { DimensionValue } from 'react-native';
 
 import {
   FeedbackBubble,
+  type FeedbackBubbleVariant,
   KoolDialogue,
   type KoolDialogueVariant,
   ListeningIndicator,
@@ -15,21 +16,29 @@ import { ComponentSizes, Radii, SemanticColors, Spacing, Typography } from '@/th
 import type { ActivityHotspot, ActivityScreenProps, ActivityScreenVisualState } from './types';
 
 export type ActivityScreenVisualStatePresentation = {
-  dialogueVariant: KoolDialogueVariant;
+  dialogueVariant?: KoolDialogueVariant;
+  feedbackVariant?: FeedbackBubbleVariant;
   listeningState?: ListeningIndicatorState;
-  statusText: string;
+  previewLabel: string;
+  showHotspots?: boolean;
+  showMicrophone?: boolean;
 };
 
 export const activityScreenVisualStatePresentation: Record<ActivityScreenVisualState, ActivityScreenVisualStatePresentation> = {
-  prompt: { dialogueVariant: 'prompt', statusText: 'Ready for your answer' },
-  listening: { dialogueVariant: 'prompt', listeningState: 'listening', statusText: 'Listening' },
-  gentleCue: { dialogueVariant: 'gentle', listeningState: 'gentleCue', statusText: 'Here is a clue' },
-  reprompt: { dialogueVariant: 'gentle', listeningState: 'reprompt', statusText: 'Try again' },
-  tapHelpAvailable: { dialogueVariant: 'gentle', listeningState: 'tapHelpAvailable', statusText: 'Help is available' },
-  finalListening: { dialogueVariant: 'prompt', listeningState: 'finalListening', statusText: 'One last try' },
-  processing: { dialogueVariant: 'default', listeningState: 'processing', statusText: 'Thinking' },
-  success: { dialogueVariant: 'default', statusText: 'Great work' },
-  error: { dialogueVariant: 'gentle', listeningState: 'error', statusText: 'Try again' },
+  prompt: { dialogueVariant: 'prompt', previewLabel: 'Ready for your answer' },
+  listening: { dialogueVariant: 'prompt', listeningState: 'listening', previewLabel: 'Listening' },
+  gentleCue: { dialogueVariant: 'gentle', listeningState: 'gentleCue', previewLabel: 'Here is a clue' },
+  reprompt: { dialogueVariant: 'gentle', listeningState: 'reprompt', previewLabel: 'Try again' },
+  tapHelpAvailable: {
+    dialogueVariant: 'gentle',
+    listeningState: 'tapHelpAvailable',
+    previewLabel: 'Help is available',
+    showHotspots: true,
+  },
+  finalListening: { dialogueVariant: 'prompt', listeningState: 'finalListening', previewLabel: 'One last try' },
+  processing: { dialogueVariant: 'default', listeningState: 'processing', previewLabel: 'Thinking' },
+  success: { feedbackVariant: 'success', previewLabel: 'Great work', showMicrophone: false },
+  error: { feedbackVariant: 'error', previewLabel: 'Try again' },
 };
 
 function toPercentage(value: number): DimensionValue {
@@ -78,7 +87,9 @@ export function ActivityScreen({
   const { width } = useWindowDimensions();
   const presentation = activityScreenVisualStatePresentation[visualState];
   const isWideLayout = width >= 720;
-  const showHotspots = Boolean(hotspots?.length && onHotspotPress);
+  const showHotspots = Boolean(presentation.showHotspots && hotspots?.length && onHotspotPress);
+  const showMicrophone = presentation.showMicrophone ?? true;
+  const shownFeedback = presentation.feedbackVariant && feedback?.variant === presentation.feedbackVariant ? feedback : undefined;
 
   return (
     <SafeAreaView style={styles.screen}>
@@ -88,11 +99,10 @@ export function ActivityScreen({
             <Text accessibilityRole="header" style={styles.title}>
               {title}
             </Text>
-            <Text style={styles.status}>{presentation.statusText}</Text>
             <ProgressIndicator currentActivity={currentActivity} totalActivities={totalActivities} />
           </View>
 
-          <KoolDialogue message={koolMessage} variant={presentation.dialogueVariant} />
+          {presentation.dialogueVariant ? <KoolDialogue message={koolMessage} variant={presentation.dialogueVariant} /> : null}
 
           <View accessibilityLabel={`${title} picture`} style={styles.sceneFrame}>
             <Image accessible accessibilityLabel={`${title} scene`} resizeMode="contain" source={sceneSource} style={styles.sceneImage} />
@@ -105,18 +115,22 @@ export function ActivityScreen({
             ) : null}
           </View>
 
-          <View style={[styles.controls, isWideLayout && styles.controlsWide]}>
-            {presentation.listeningState ? (
-              <View style={styles.controlItem}>
-                <ListeningIndicator state={presentation.listeningState} />
-              </View>
-            ) : null}
-            <View style={styles.controlItem}>
-              <MicrophoneButton onPress={onMicrophonePress} state={microphoneState} />
+          {presentation.listeningState || showMicrophone ? (
+            <View style={[styles.controls, isWideLayout && styles.controlsWide]}>
+              {presentation.listeningState ? (
+                <View style={styles.controlItem}>
+                  <ListeningIndicator state={presentation.listeningState} />
+                </View>
+              ) : null}
+              {showMicrophone ? (
+                <View style={styles.controlItem}>
+                  <MicrophoneButton onPress={onMicrophonePress} state={microphoneState} />
+                </View>
+              ) : null}
             </View>
-          </View>
+          ) : null}
 
-          {feedback ? <FeedbackBubble message={feedback.message} title={feedback.title} variant={feedback.variant} /> : null}
+          {shownFeedback ? <FeedbackBubble message={shownFeedback.message} title={shownFeedback.title} variant={shownFeedback.variant} /> : null}
 
           <Text accessibilityLabel={`Activity identifier ${activityId}`} style={styles.activityIdentifier}>
             Activity {activityId}
@@ -150,10 +164,6 @@ const styles = StyleSheet.create({
   title: {
     ...Typography.heading,
     color: SemanticColors.primaryText,
-  },
-  status: {
-    ...Typography.label,
-    color: SemanticColors.secondaryText,
   },
   sceneFrame: {
     aspectRatio: 1.5,

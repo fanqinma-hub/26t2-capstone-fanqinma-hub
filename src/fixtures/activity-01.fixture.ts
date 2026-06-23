@@ -14,11 +14,6 @@ export const activity01DevelopmentFixture: ActivityScreenProps = {
   totalActivities: 5,
   visualState: 'tapHelpAvailable',
   microphoneState: 'idle',
-  feedback: {
-    title: 'A clue is ready',
-    message: 'Choose a highlighted part of the picture when you would like some help.',
-    variant: 'help',
-  },
   hotspots: [
     {
       id: 'temporary-picture-clue',
