@@ -9,7 +9,7 @@ export const activity01DevelopmentFixture: ActivityScreenProps = {
   activityId: '1',
   title: 'Activity 1: Look and describe',
   sceneSource: clientScenes.activity1.source,
-  koolMessage: 'What can you see in this picture? Tap a highlighted part if you would like a clue.',
+  koolMessage: 'What can you see in this picture?',
   currentActivity: 1,
   totalActivities: 5,
   visualState: 'tapHelpAvailable',
