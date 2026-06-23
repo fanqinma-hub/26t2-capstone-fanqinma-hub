@@ -1,5 +1,5 @@
 import type { ActivityScreenProps } from '@/components/activity';
-import { clientSceneAssets } from '@/constants/client-assets';
+import { clientScenes } from '@/constants/client-assets';
 
 /**
  * Temporary Role 2 development fixture. Role 3 will replace this with official activity data.
@@ -8,7 +8,7 @@ import { clientSceneAssets } from '@/constants/client-assets';
 export const activity01DevelopmentFixture: ActivityScreenProps = {
   activityId: '1',
   title: 'Activity 1: Look and describe',
-  sceneSource: clientSceneAssets.activity01.source,
+  sceneSource: clientScenes.activity1.source,
   koolMessage: 'What can you see in this picture? Tap a highlighted part if you would like a clue.',
   currentActivity: 1,
   totalActivities: 5,

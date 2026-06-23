@@ -1,6 +1,7 @@
 import { Image, StyleSheet, Text, View } from 'react-native';
+import type { ImageSourcePropType } from 'react-native';
 
-import { clientIconAssets } from '@/constants/client-assets';
+import { clientUiAssets } from '@/constants/client-assets';
 import { BrandColors, Radii, SemanticColors, Spacing, Typography } from '@/theme';
 
 export type ListeningIndicatorState =
@@ -17,7 +18,7 @@ export type ListeningIndicatorProps = {
   accessibilityLabel?: string;
 };
 
-const stateContent: Record<ListeningIndicatorState, { icon: string; imageSource?: number; title: string; description: string }> = {
+const stateContent: Record<ListeningIndicatorState, { icon: string; imageSource?: ImageSourcePropType; title: string; description: string }> = {
   listening: {
     icon: '👂',
     title: 'Listening',
@@ -45,7 +46,7 @@ const stateContent: Record<ListeningIndicatorState, { icon: string; imageSource?
   },
   processing: {
     icon: '💭',
-    imageSource: clientIconAssets.thinking.source as number,
+    imageSource: clientUiAssets.thinking.source,
     title: 'Thinking',
     description: 'Please wait for the next prompt.',
   },

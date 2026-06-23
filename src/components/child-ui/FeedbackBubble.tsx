@@ -1,6 +1,7 @@
 import { Image, StyleSheet, Text, View } from 'react-native';
+import type { ImageSourcePropType } from 'react-native';
 
-import { clientIconAssets } from '@/constants/client-assets';
+import { clientUiAssets } from '@/constants/client-assets';
 import { BrandColors, Radii, SemanticColors, Spacing, Typography } from '@/theme';
 
 export type FeedbackBubbleVariant = 'neutral' | 'encouragement' | 'success' | 'help' | 'error';
@@ -12,10 +13,10 @@ export type FeedbackBubbleProps = {
   accessibilityLabel?: string;
 };
 
-const variantContent: Record<FeedbackBubbleVariant, { icon: string; imageSource?: number; title: string }> = {
+const variantContent: Record<FeedbackBubbleVariant, { icon: string; imageSource?: ImageSourcePropType; title: string }> = {
   neutral: { icon: '💬', title: 'A note' },
   encouragement: { icon: '🌱', title: 'Keep going' },
-  success: { icon: '🎉', imageSource: clientIconAssets.birthdayParty.source as number, title: 'Great work' },
+  success: { icon: '🎉', imageSource: clientUiAssets.successCelebration.source, title: 'Great work' },
   help: { icon: '💡', title: 'Helpful hint' },
   error: { icon: '⚠️', title: 'Let us try again' },
 };

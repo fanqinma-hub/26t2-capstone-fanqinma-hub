@@ -1,6 +1,7 @@
 import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
+import type { ImageSourcePropType } from 'react-native';
 
-import { clientIconAssets } from '@/constants/client-assets';
+import { clientUiAssets } from '@/constants/client-assets';
 import { BrandColors, ComponentSizes, Radii, SemanticColors, Spacing, Typography } from '@/theme';
 
 export type MicrophoneButtonState = 'idle' | 'listening' | 'processing' | 'disabled' | 'error';
@@ -13,7 +14,7 @@ export type MicrophoneButtonProps = {
 
 const stateContent: Record<
   MicrophoneButtonState,
-  { icon: string; imageSource?: number; label: string; helperText: string; accessibilityHint: string }
+  { icon: string; imageSource?: ImageSourcePropType; label: string; helperText: string; accessibilityHint: string }
 > = {
   idle: {
     icon: '🎤',
@@ -29,7 +30,7 @@ const stateContent: Record<
   },
   processing: {
     icon: '💭',
-    imageSource: clientIconAssets.thinking.source as number,
+    imageSource: clientUiAssets.thinking.source,
     label: 'Thinking…',
     helperText: 'Please wait for the next prompt.',
     accessibilityHint: 'The app is processing your response.',
