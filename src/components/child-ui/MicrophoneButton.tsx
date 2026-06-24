@@ -1,5 +1,7 @@
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
+import type { ImageSourcePropType } from 'react-native';
 
+import { clientUiAssets } from '@/constants/client-assets';
 import { BrandColors, ComponentSizes, Radii, SemanticColors, Spacing, Typography } from '@/theme';
 
 export type MicrophoneButtonState = 'idle' | 'listening' | 'processing' | 'disabled' | 'error';
@@ -8,11 +10,12 @@ export type MicrophoneButtonProps = {
   state?: MicrophoneButtonState;
   onPress?: () => void;
   accessibilityLabel?: string;
+  layout?: 'default' | 'primary';
 };
 
 const stateContent: Record<
   MicrophoneButtonState,
-  { icon: string; label: string; helperText: string; accessibilityHint: string }
+  { icon: string; imageSource?: ImageSourcePropType; label: string; helperText: string; accessibilityHint: string }
 > = {
   idle: {
     icon: '🎤',
@@ -28,6 +31,7 @@ const stateContent: Record<
   },
   processing: {
     icon: '💭',
+    imageSource: clientUiAssets.thinking.source,
     label: 'Thinking…',
     helperText: 'Please wait for the next prompt.',
     accessibilityHint: 'The app is processing your response.',
@@ -46,7 +50,7 @@ const stateContent: Record<
   },
 };
 
-export function MicrophoneButton({ state = 'idle', onPress, accessibilityLabel }: MicrophoneButtonProps) {
+export function MicrophoneButton({ state = 'idle', onPress, accessibilityLabel, layout = 'default' }: MicrophoneButtonProps) {
   const content = stateContent[state];
   const isDisabled = state === 'disabled' || state === 'processing';
 
@@ -58,13 +62,13 @@ export function MicrophoneButton({ state = 'idle', onPress, accessibilityLabel }
       accessibilityState={{ busy: state === 'processing', disabled: isDisabled }}
       disabled={isDisabled}
       onPress={onPress}
-      style={({ pressed }) => [styles.button, styles[state], pressed && !isDisabled && styles.pressed]}>
-      <View style={styles.iconCircle}>
-        <Text style={styles.icon}>{content.icon}</Text>
+      style={({ pressed }) => [styles.button, styles[state], layout === 'primary' && styles.primaryButton, pressed && !isDisabled && styles.pressed]}>
+      <View style={[styles.iconCircle, layout === 'primary' && styles.primaryIconCircle]}>
+        {content.imageSource ? <Image accessible={false} resizeMode="contain" source={content.imageSource} style={styles.assetIcon} /> : <Text style={styles.icon}>{content.icon}</Text>}
       </View>
-      <View style={styles.copy}>
-        <Text style={styles.label}>{content.label}</Text>
-        <Text style={styles.helperText}>{content.helperText}</Text>
+      <View style={[styles.copy, layout === 'primary' && styles.primaryCopy]}>
+        <Text style={[styles.label, layout === 'primary' && styles.primaryLabel]}>{content.label}</Text>
+        {layout === 'default' ? <Text style={styles.helperText}>{content.helperText}</Text> : null}
       </View>
     </Pressable>
   );
@@ -103,6 +107,16 @@ const styles = StyleSheet.create({
   pressed: {
     opacity: 0.8,
   },
+  primaryButton: {
+    alignSelf: 'center',
+    backgroundColor: 'transparent',
+    borderWidth: 0,
+    flexDirection: 'column',
+    gap: Spacing.one,
+    minHeight: 136,
+    minWidth: 144,
+    padding: 0,
+  },
   iconCircle: {
     alignItems: 'center',
     backgroundColor: SemanticColors.surface,
@@ -111,16 +125,33 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     width: ComponentSizes.microphoneButton,
   },
+  primaryIconCircle: {
+    backgroundColor: BrandColors.tangerine,
+    borderColor: BrandColors.marsala,
+    borderWidth: Spacing.half,
+    height: 104,
+    width: 104,
+  },
   icon: {
     ...Typography.heading,
+  },
+  assetIcon: {
+    height: 56,
+    width: 56,
   },
   copy: {
     flex: 1,
     gap: Spacing.half,
   },
+  primaryCopy: {
+    flex: 0,
+  },
   label: {
     ...Typography.status,
     color: SemanticColors.primaryText,
+  },
+  primaryLabel: {
+    textAlign: 'center',
   },
   helperText: {
     ...Typography.bodySmall,

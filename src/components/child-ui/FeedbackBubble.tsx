@@ -1,31 +1,35 @@
-import { StyleSheet, Text, View } from 'react-native';
+import { Image, StyleSheet, Text, View } from 'react-native';
+import type { ImageSourcePropType } from 'react-native';
 
+import { clientUiAssets } from '@/constants/client-assets';
 import { BrandColors, Radii, SemanticColors, Spacing, Typography } from '@/theme';
 
 export type FeedbackBubbleVariant = 'neutral' | 'encouragement' | 'success' | 'help' | 'error';
 
 export type FeedbackBubbleProps = {
   message: string;
+  title?: string;
   variant?: FeedbackBubbleVariant;
   accessibilityLabel?: string;
 };
 
-const variantContent: Record<FeedbackBubbleVariant, { icon: string; title: string }> = {
+const variantContent: Record<FeedbackBubbleVariant, { icon: string; imageSource?: ImageSourcePropType; title: string }> = {
   neutral: { icon: '💬', title: 'A note' },
   encouragement: { icon: '🌱', title: 'Keep going' },
-  success: { icon: '🎉', title: 'Great work' },
+  success: { icon: '🎉', imageSource: clientUiAssets.successCelebration.source, title: 'Great work' },
   help: { icon: '💡', title: 'Helpful hint' },
   error: { icon: '⚠️', title: 'Let us try again' },
 };
 
-export function FeedbackBubble({ message, variant = 'neutral', accessibilityLabel }: FeedbackBubbleProps) {
+export function FeedbackBubble({ message, title, variant = 'neutral', accessibilityLabel }: FeedbackBubbleProps) {
   const content = variantContent[variant];
+  const resolvedTitle = title ?? content.title;
 
   return (
-    <View accessible accessibilityLabel={accessibilityLabel ?? `${content.title}. ${message}`} style={[styles.container, styles[variant]]}>
-      <Text style={styles.icon}>{content.icon}</Text>
+    <View accessible accessibilityLabel={accessibilityLabel ?? `${resolvedTitle}. ${message}`} style={[styles.container, styles[variant]]}>
+      {content.imageSource ? <Image accessible={false} resizeMode="contain" source={content.imageSource} style={styles.assetIcon} /> : <Text style={styles.icon}>{content.icon}</Text>}
       <View style={styles.copy}>
-        <Text style={styles.title}>{content.title}</Text>
+        <Text style={styles.title}>{resolvedTitle}</Text>
         <Text style={styles.message}>{message}</Text>
       </View>
     </View>
@@ -63,6 +67,10 @@ const styles = StyleSheet.create({
   },
   icon: {
     ...Typography.headingSmall,
+  },
+  assetIcon: {
+    height: 44,
+    width: 44,
   },
   copy: {
     flex: 1,
