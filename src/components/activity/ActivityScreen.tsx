@@ -1,24 +1,13 @@
 import { Image, Pressable, SafeAreaView, ScrollView, StyleSheet, Text, View } from 'react-native';
 import type { DimensionValue } from 'react-native';
 
-import {
-  FeedbackBubble,
-  type FeedbackBubbleVariant,
-  KoolDialogue,
-  type KoolDialogueVariant,
-  ListeningIndicator,
-  type ListeningIndicatorState,
-  MicrophoneButton,
-  ProgressIndicator,
-} from '@/components/child-ui';
+import { KoolDialogue, KoolMascot, type KoolDialogueVariant, type KoolMascotState, MicrophoneButton, ProgressIndicator } from '@/components/child-ui';
 import { BrandColors, ComponentSizes, Radii, SemanticColors, Spacing, Typography } from '@/theme';
 
 import type { ActivityHotspot, ActivityScreenProps, ActivityScreenVisualState } from './types';
 
 export type ActivityScreenVisualStatePresentation = {
   dialogueVariant?: KoolDialogueVariant;
-  feedbackVariant?: FeedbackBubbleVariant;
-  listeningState?: ListeningIndicatorState;
   previewLabel: string;
   showHotspots?: boolean;
   showMicrophone?: boolean;
@@ -26,18 +15,32 @@ export type ActivityScreenVisualStatePresentation = {
 
 export const activityScreenVisualStatePresentation: Record<ActivityScreenVisualState, ActivityScreenVisualStatePresentation> = {
   prompt: { dialogueVariant: 'prompt', previewLabel: 'Ready for your answer' },
-  listening: { dialogueVariant: 'prompt', listeningState: 'listening', previewLabel: 'Listening' },
-  gentleCue: { dialogueVariant: 'gentle', listeningState: 'gentleCue', previewLabel: 'Here is a clue' },
-  reprompt: { dialogueVariant: 'gentle', listeningState: 'reprompt', previewLabel: 'Try again' },
-  tapHelpAvailable: {
-    dialogueVariant: 'gentle',
-    previewLabel: 'Help is available',
-    showHotspots: true,
-  },
-  finalListening: { dialogueVariant: 'prompt', listeningState: 'finalListening', previewLabel: 'One last try' },
-  processing: { dialogueVariant: 'default', listeningState: 'processing', previewLabel: 'Thinking' },
-  success: { feedbackVariant: 'success', previewLabel: 'Great work', showMicrophone: false },
-  error: { feedbackVariant: 'error', previewLabel: 'Try again' },
+  listening: { dialogueVariant: 'prompt', previewLabel: 'Listening' },
+  gentleCue: { dialogueVariant: 'gentle', previewLabel: 'Here is a clue' },
+  reprompt: { dialogueVariant: 'gentle', previewLabel: 'Try again' },
+  tapHelpAvailable: { dialogueVariant: 'gentle', previewLabel: 'Help is available', showHotspots: true },
+  cluePresented: { dialogueVariant: 'gentle', previewLabel: 'Clue presented' },
+  finalListening: { dialogueVariant: 'prompt', previewLabel: 'One last try' },
+  processing: { dialogueVariant: 'default', previewLabel: 'Thinking' },
+  success: { dialogueVariant: 'prompt', previewLabel: 'Great work', showMicrophone: false },
+  retry: { dialogueVariant: 'gentle', previewLabel: 'Try again' },
+  complete: { dialogueVariant: 'prompt', previewLabel: 'Activity complete', showMicrophone: false },
+  error: { dialogueVariant: 'gentle', previewLabel: 'Try again' },
+};
+
+const mascotByVisualState: Record<ActivityScreenVisualState, KoolMascotState> = {
+  prompt: 'speaking',
+  listening: 'listening',
+  gentleCue: 'speaking',
+  reprompt: 'speaking',
+  tapHelpAvailable: 'idle',
+  cluePresented: 'speaking',
+  finalListening: 'speaking',
+  processing: 'thinking',
+  success: 'success',
+  retry: 'retry',
+  complete: 'success',
+  error: 'retry',
 };
 
 function toPercentage(value: number): DimensionValue {
@@ -48,24 +51,38 @@ function toPercentage(value: number): DimensionValue {
 function HotspotOverlay({ hotspot, onPress }: { hotspot: ActivityHotspot; onPress: () => void }) {
   return (
     <Pressable
-      accessibilityHint="Double tap to ask for a clue about this part of the picture."
+      accessibilityHint="Double tap to ask Kool for a clue about this part of the picture."
       accessibilityLabel={`Picture clue: ${hotspot.label}`}
       accessibilityRole="button"
+      hitSlop={8}
       onPress={onPress}
       style={({ pressed }) => [
         styles.hotspot,
+        {
+          left: toPercentage(hotspot.x + hotspot.width / 2),
+          top: toPercentage(hotspot.y + hotspot.height / 2),
+        },
+        pressed && styles.hotspotPressed,
+      ]}>
+      <Text style={styles.hotspotQuestion}>?</Text>
+    </Pressable>
+  );
+}
+
+function HighlightedObject({ hotspot }: { hotspot: ActivityHotspot }) {
+  return (
+    <View
+      style={[
+        styles.objectHighlight,
         {
           height: toPercentage(hotspot.height),
           left: toPercentage(hotspot.x),
           top: toPercentage(hotspot.y),
           width: toPercentage(hotspot.width),
+          pointerEvents: 'none',
         },
-        pressed && styles.hotspotPressed,
-      ]}>
-      <Text numberOfLines={2} style={styles.hotspotLabel}>
-        <Text style={styles.hotspotQuestion}>?</Text> {hotspot.label}
-      </Text>
-    </Pressable>
+      ]}
+    />
   );
 }
 
@@ -78,15 +95,21 @@ export function ActivityScreen({
   totalActivities,
   visualState,
   microphoneState,
-  feedback,
+  mascotState,
+  isKoolSpeaking,
+  statusLine,
   hotspots,
+  activeHotspotId,
   onMicrophonePress,
   onHotspotPress,
+  onCompletePress,
+  completeActionLabel = 'View demo report',
+  developmentControls,
 }: ActivityScreenProps) {
   const presentation = activityScreenVisualStatePresentation[visualState];
   const showHotspots = Boolean(presentation.showHotspots && hotspots?.length && onHotspotPress);
   const showMicrophone = presentation.showMicrophone ?? true;
-  const shownFeedback = presentation.feedbackVariant && feedback?.variant === presentation.feedbackVariant ? feedback : undefined;
+  const resolvedMascotState = mascotState ?? mascotByVisualState[visualState];
 
   return (
     <SafeAreaView style={styles.screen}>
@@ -99,10 +122,11 @@ export function ActivityScreen({
             <ProgressIndicator currentActivity={currentActivity} totalActivities={totalActivities} />
           </View>
 
-          {presentation.dialogueVariant ? <KoolDialogue message={koolMessage} variant={presentation.dialogueVariant} /> : null}
-
           <View accessibilityLabel={`${title} picture`} style={styles.sceneFrame}>
             <Image accessible accessibilityLabel={`${title} scene`} resizeMode="contain" source={sceneSource} style={styles.sceneImage} />
+            {activeHotspotId
+              ? hotspots?.filter((hotspot) => hotspot.id === activeHotspotId).map((hotspot) => <HighlightedObject hotspot={hotspot} key={hotspot.id} />)
+              : null}
             {showHotspots ? (
               <View style={styles.hotspotLayer}>
                 {hotspots?.map((hotspot) => (
@@ -112,26 +136,29 @@ export function ActivityScreen({
             ) : null}
           </View>
 
-          {presentation.listeningState || showMicrophone ? (
-            <View style={styles.controls}>
-              {presentation.listeningState ? (
-                <View style={styles.controlItem}>
-                  <ListeningIndicator state={presentation.listeningState} />
-                </View>
-              ) : null}
+          <View style={styles.conversationZone}>
+            <KoolMascot isSpeaking={isKoolSpeaking} size="medium" state={resolvedMascotState} />
+            <View style={styles.conversationCopy}>
+              {presentation.dialogueVariant ? <KoolDialogue message={koolMessage} variant={presentation.dialogueVariant} /> : null}
+              {statusLine ? <Text accessibilityLiveRegion="polite" style={styles.statusLine}>{statusLine}</Text> : null}
               {showMicrophone ? (
                 <View style={styles.microphoneControl}>
                   <MicrophoneButton layout="primary" onPress={onMicrophonePress} state={microphoneState} />
                 </View>
               ) : null}
             </View>
-          ) : null}
+          </View>
 
-          {shownFeedback ? <FeedbackBubble message={shownFeedback.message} title={shownFeedback.title} variant={shownFeedback.variant} /> : null}
+          {visualState === 'complete' && onCompletePress ? (
+            <Pressable accessibilityRole="button" onPress={onCompletePress} style={styles.completeButton}>
+              <Text style={styles.completeButtonText}>{completeActionLabel}</Text>
+            </Pressable>
+          ) : null}
 
           <Text accessibilityLabel={`Activity identifier ${activityId}`} style={styles.activityIdentifier}>
             Activity {activityId}
           </Text>
+          {developmentControls}
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -159,7 +186,7 @@ const styles = StyleSheet.create({
     gap: Spacing.one,
   },
   title: {
-    ...Typography.heading,
+    ...Typography.headingSmall,
     color: SemanticColors.primaryText,
   },
   sceneFrame: {
@@ -179,38 +206,66 @@ const styles = StyleSheet.create({
   hotspotLayer: {
     ...StyleSheet.absoluteFill,
     pointerEvents: 'box-none',
+    zIndex: 2,
   },
   hotspot: {
     alignItems: 'center',
-    backgroundColor: 'rgba(255, 249, 241, 0.7)',
-    borderColor: BrandColors.tangerine,
-    borderRadius: Radii.medium,
-    borderWidth: Spacing.half,
+    backgroundColor: BrandColors.tangerine,
+    borderColor: BrandColors.marsala,
+    borderRadius: Radii.pill,
+    borderWidth: 3,
+    height: ComponentSizes.minimumTouchTarget,
     justifyContent: 'center',
-    padding: Spacing.one,
     position: 'absolute',
+    transform: [{ translateX: -ComponentSizes.minimumTouchTarget / 2 }, { translateY: -ComponentSizes.minimumTouchTarget / 2 }],
+    width: ComponentSizes.minimumTouchTarget,
   },
   hotspotPressed: {
-    backgroundColor: 'rgba(255, 240, 217, 0.8)',
-  },
-  hotspotLabel: {
-    ...Typography.label,
-    color: SemanticColors.primaryText,
-    textAlign: 'center',
+    opacity: 0.76,
   },
   hotspotQuestion: {
-    ...Typography.bodyStrong,
-    color: SemanticColors.error,
+    ...Typography.headingSmall,
+    color: SemanticColors.primaryText,
   },
-  controls: {
-    alignItems: 'center',
+  objectHighlight: {
+    borderColor: BrandColors.tangerine,
+    borderRadius: Radii.medium,
+    borderWidth: 4,
+    boxShadow: `0px 0px 10px ${BrandColors.tangerine}`,
+    position: 'absolute',
+    zIndex: 1,
+  },
+  conversationZone: {
+    alignItems: 'flex-end',
+    flexDirection: 'row',
     gap: Spacing.two,
   },
-  controlItem: {
-    width: '100%',
+  conversationCopy: {
+    flex: 1,
+    gap: Spacing.two,
+    minWidth: 0,
   },
   microphoneControl: {
-    alignSelf: 'center',
+    alignSelf: 'flex-end',
+  },
+  statusLine: {
+    ...Typography.label,
+    color: SemanticColors.secondaryText,
+    textAlign: 'center',
+  },
+  completeButton: {
+    alignItems: 'center',
+    backgroundColor: BrandColors.tangerine,
+    borderColor: BrandColors.marsala,
+    borderRadius: Radii.pill,
+    borderWidth: 2,
+    justifyContent: 'center',
+    minHeight: 64,
+    paddingHorizontal: Spacing.four,
+  },
+  completeButtonText: {
+    ...Typography.button,
+    color: SemanticColors.primaryText,
   },
   activityIdentifier: {
     ...Typography.bodySmall,

@@ -1,6 +1,7 @@
 import type { ImageSourcePropType } from 'react-native';
+import type { ReactNode } from 'react';
 
-import type { FeedbackBubbleVariant, MicrophoneButtonState } from '@/components/child-ui';
+import type { FeedbackBubbleVariant, KoolMascotState, MicrophoneButtonState } from '@/components/child-ui';
 
 export type ActivityScreenVisualState =
   | 'prompt'
@@ -8,9 +9,12 @@ export type ActivityScreenVisualState =
   | 'gentleCue'
   | 'reprompt'
   | 'tapHelpAvailable'
+  | 'cluePresented'
   | 'finalListening'
   | 'processing'
   | 'success'
+  | 'retry'
+  | 'complete'
   | 'error';
 
 export type ActivityHotspot = {
@@ -37,8 +41,15 @@ export type ActivityScreenProps = {
   totalActivities: number;
   visualState: ActivityScreenVisualState;
   microphoneState: MicrophoneButtonState;
+  mascotState?: KoolMascotState;
+  isKoolSpeaking?: boolean;
+  statusLine?: string;
   feedback?: ActivityFeedback;
   hotspots?: ActivityHotspot[];
+  activeHotspotId?: string;
   onMicrophonePress: () => void;
   onHotspotPress?: (hotspotId: string) => void;
+  onCompletePress?: () => void;
+  completeActionLabel?: string;
+  developmentControls?: ReactNode;
 };

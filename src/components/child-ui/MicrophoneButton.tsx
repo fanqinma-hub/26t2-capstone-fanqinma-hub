@@ -1,7 +1,6 @@
-import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
-import type { ImageSourcePropType } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { SymbolView } from 'expo-symbols';
 
-import { clientUiAssets } from '@/constants/client-assets';
 import { BrandColors, ComponentSizes, Radii, SemanticColors, Spacing, Typography } from '@/theme';
 
 export type MicrophoneButtonState = 'idle' | 'listening' | 'processing' | 'disabled' | 'error';
@@ -15,44 +14,49 @@ export type MicrophoneButtonProps = {
 
 const stateContent: Record<
   MicrophoneButtonState,
-  { icon: string; imageSource?: ImageSourcePropType; label: string; helperText: string; accessibilityHint: string }
+  { label: string; helperText: string; accessibilityHint: string }
 > = {
   idle: {
-    icon: '🎤',
     label: 'Tap to speak',
     helperText: 'Your microphone is ready.',
     accessibilityHint: 'Double tap to begin speaking.',
   },
   listening: {
-    icon: '👂',
-    label: 'Listening now',
+    label: 'Listening',
     helperText: 'Speak when you are ready.',
     accessibilityHint: 'The app is listening.',
   },
   processing: {
-    icon: '💭',
-    imageSource: clientUiAssets.thinking.source,
     label: 'Thinking…',
     helperText: 'Please wait for the next prompt.',
     accessibilityHint: 'The app is processing your response.',
   },
   disabled: {
-    icon: '🔒',
     label: 'Microphone unavailable',
     helperText: 'This button cannot be used right now.',
     accessibilityHint: 'The microphone button is disabled.',
   },
   error: {
-    icon: '⚠️',
     label: 'Try again',
     helperText: 'Something went wrong. Tap to try again.',
     accessibilityHint: 'Double tap to try the microphone again.',
   },
 };
 
+function MicrophoneGlyph({ color }: { color: string }) {
+  return (
+    <View accessibilityElementsHidden importantForAccessibility="no-hide-descendants" style={styles.glyph}>
+      <View style={[styles.glyphHead, { backgroundColor: color }]} />
+      <View style={[styles.glyphStem, { backgroundColor: color }]} />
+      <View style={[styles.glyphBase, { backgroundColor: color }]} />
+    </View>
+  );
+}
+
 export function MicrophoneButton({ state = 'idle', onPress, accessibilityLabel, layout = 'default' }: MicrophoneButtonProps) {
   const content = stateContent[state];
   const isDisabled = state === 'disabled' || state === 'processing';
+  const iconColor = state === 'listening' ? BrandColors.marsala : SemanticColors.primaryText;
 
   return (
     <Pressable
@@ -63,8 +67,13 @@ export function MicrophoneButton({ state = 'idle', onPress, accessibilityLabel, 
       disabled={isDisabled}
       onPress={onPress}
       style={({ pressed }) => [styles.button, styles[state], layout === 'primary' && styles.primaryButton, pressed && !isDisabled && styles.pressed]}>
-      <View style={[styles.iconCircle, layout === 'primary' && styles.primaryIconCircle]}>
-        {content.imageSource ? <Image accessible={false} resizeMode="contain" source={content.imageSource} style={styles.assetIcon} /> : <Text style={styles.icon}>{content.icon}</Text>}
+      <View style={[styles.iconCircle, layout === 'primary' && styles.primaryIconCircle, state === 'listening' && styles.listeningIconCircle]}>
+        <SymbolView
+          fallback={<MicrophoneGlyph color={iconColor} />}
+          name={{ android: 'mic', ios: 'mic.fill', web: 'mic' }}
+          size={48}
+          tintColor={iconColor}
+        />
       </View>
       <View style={[styles.copy, layout === 'primary' && styles.primaryCopy]}>
         <Text style={[styles.label, layout === 'primary' && styles.primaryLabel]}>{content.label}</Text>
@@ -132,12 +141,9 @@ const styles = StyleSheet.create({
     height: 104,
     width: 104,
   },
-  icon: {
-    ...Typography.heading,
-  },
-  assetIcon: {
-    height: 56,
-    width: 56,
+  listeningIconCircle: {
+    borderColor: BrandColors.marsala,
+    borderWidth: 4,
   },
   copy: {
     flex: 1,
@@ -156,5 +162,28 @@ const styles = StyleSheet.create({
   helperText: {
     ...Typography.bodySmall,
     color: SemanticColors.secondaryText,
+  },
+  glyph: {
+    alignItems: 'center',
+    height: 48,
+    justifyContent: 'flex-end',
+    width: 48,
+  },
+  glyphHead: {
+    borderRadius: 12,
+    height: 28,
+    width: 18,
+  },
+  glyphStem: {
+    borderRadius: 2,
+    height: 12,
+    marginTop: 2,
+    width: 4,
+  },
+  glyphBase: {
+    borderRadius: 2,
+    height: 4,
+    marginTop: 1,
+    width: 22,
   },
 });

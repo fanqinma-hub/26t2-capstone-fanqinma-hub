@@ -1,97 +1,132 @@
-import { Link } from 'expo-router';
-import { useState } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { useRouter } from 'expo-router';
+import { Image, Pressable, SafeAreaView, ScrollView, StyleSheet, Text, View } from 'react-native';
 
-type Screen = 'home' | 'report';
+import { KoolMascot } from '@/components/child-ui';
+import { brandAssets } from '@/constants/brand-assets';
+import { BrandColors, ComponentSizes, Radii, SemanticColors, Spacing, Typography } from '@/theme';
 
 export default function HomeScreen() {
-  const [screen, setScreen] = useState<Screen>('home');
-
-  if (screen === 'report') {
-    return (
-      <View style={styles.container}>
-        <Text style={styles.title}>Session Report</Text>
-
-        <View style={styles.card}>
-          <Text style={styles.section}>Parent View Placeholder</Text>
-          <Text>
-            Progress summary, word cards and stars will appear here.
-          </Text>
-        </View>
-
-        <View style={styles.card}>
-          <Text style={styles.section}>Therapist View Placeholder</Text>
-          <Text>
-            Tier counts, transcript examples and editable therapist note will appear here.
-          </Text>
-        </View>
-
-        <Pressable style={styles.button} onPress={() => setScreen('home')}>
-          <Text style={styles.buttonText}>Back to Home</Text>
-        </Pressable>
-      </View>
-    );
-  }
+  const router = useRouter();
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Big, Small and Everything in Between!</Text>
-      <Text style={styles.subtitle}>FunWattle Size Words Unit</Text>
+    <SafeAreaView style={styles.screen}>
+      <ScrollView contentContainerStyle={styles.scrollContent} style={styles.scrollView}>
+        <View style={styles.content}>
+          <Image accessible accessibilityLabel="FunWattle: Learning blooms with therapy" resizeMode="contain" source={brandAssets.logos.tagline.source} style={styles.logo} />
 
-      <Link asChild href="/activity/1">
-        <Pressable style={styles.button}>
-          <Text style={styles.buttonText}>Start Activity 1</Text>
-        </Pressable>
-      </Link>
+          <View style={styles.hero}>
+            <View style={styles.card}>
+              <Text style={styles.eyebrow}>Your learning adventure</Text>
+              <Text accessibilityRole="header" style={styles.title}>
+                Big, Small and Everything in Between!
+              </Text>
+              <Text style={styles.description}>Look closely, talk with Kool, and practise fun size words.</Text>
 
-      <Pressable style={styles.button} onPress={() => setScreen('report')}>
-        <Text style={styles.buttonText}>View Report</Text>
-      </Pressable>
-    </View>
+              <Pressable accessibilityRole="button" onPress={() => router.push('/activity/1')} style={({ pressed }) => [styles.primaryButton, pressed && styles.pressed]}>
+                <Text style={styles.primaryButtonText}>Start activity</Text>
+              </Pressable>
+
+              <Pressable accessibilityRole="button" onPress={() => router.push('/report')} style={({ pressed }) => [styles.secondaryButton, pressed && styles.pressed]}>
+                <Text style={styles.secondaryButtonText}>View report</Text>
+              </Pressable>
+            </View>
+
+            <View style={styles.mascotArea}>
+              <KoolMascot size="large" state="wave" />
+              <Text style={styles.mascotCaption}>Hi, I’m Kool!</Text>
+            </View>
+          </View>
+        </View>
+      </ScrollView>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
+  screen: {
+    backgroundColor: SemanticColors.background,
     flex: 1,
-    padding: 24,
-    justifyContent: 'center',
-    gap: 16,
   },
-  title: {
-    fontSize: 26,
-    fontWeight: '700',
-    textAlign: 'center',
+  scrollView: {
+    flex: 1,
   },
-  subtitle: {
-    fontSize: 18,
-    textAlign: 'center',
-    marginBottom: 24,
+  scrollContent: {
+    alignItems: 'center',
+    padding: Spacing.three,
+  },
+  content: {
+    alignItems: 'center',
+    gap: Spacing.three,
+    maxWidth: ComponentSizes.contentMaxWidth,
+    width: '100%',
+  },
+  logo: {
+    height: 88,
+    maxWidth: 360,
+    width: '100%',
+  },
+  hero: {
+    alignItems: 'center',
+    gap: Spacing.three,
+    width: '100%',
   },
   card: {
-    borderWidth: 1,
-    borderRadius: 12,
-    padding: 16,
-    gap: 8,
+    backgroundColor: SemanticColors.surface,
+    borderColor: BrandColors.mimosa,
+    borderRadius: Radii.large,
+    borderWidth: 3,
+    gap: Spacing.three,
+    padding: Spacing.four,
+    width: '100%',
   },
-  section: {
-    fontSize: 18,
-    fontWeight: '600',
+  eyebrow: {
+    ...Typography.label,
+    color: BrandColors.marsala,
   },
-  button: {
-    padding: 14,
-    borderWidth: 1,
-    borderRadius: 8,
+  title: {
+    ...Typography.heading,
+    color: SemanticColors.primaryText,
+  },
+  description: {
+    ...Typography.body,
+    color: SemanticColors.secondaryText,
+  },
+  primaryButton: {
     alignItems: 'center',
+    backgroundColor: BrandColors.tangerine,
+    borderColor: BrandColors.marsala,
+    borderRadius: Radii.pill,
+    borderWidth: 2,
+    justifyContent: 'center',
+    minHeight: 68,
+    paddingHorizontal: Spacing.four,
+  },
+  primaryButtonText: {
+    ...Typography.button,
+    color: SemanticColors.primaryText,
   },
   secondaryButton: {
-    padding: 14,
-    borderWidth: 1,
-    borderRadius: 8,
     alignItems: 'center',
-    opacity: 0.7,
+    borderColor: BrandColors.marsala,
+    borderRadius: Radii.pill,
+    borderWidth: 2,
+    justifyContent: 'center',
+    minHeight: ComponentSizes.minimumTouchTarget,
+    paddingHorizontal: Spacing.four,
   },
-  buttonText: {
-    fontSize: 18,
+  secondaryButtonText: {
+    ...Typography.button,
+    color: BrandColors.marsala,
+  },
+  pressed: {
+    opacity: 0.8,
+  },
+  mascotArea: {
+    alignItems: 'center',
+  },
+  mascotCaption: {
+    ...Typography.speech,
+    color: BrandColors.marsala,
+    marginTop: -Spacing.three,
   },
 });

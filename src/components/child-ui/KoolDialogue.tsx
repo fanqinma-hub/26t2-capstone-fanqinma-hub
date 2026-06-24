@@ -57,7 +57,7 @@ const styles = StyleSheet.create({
     color: SemanticColors.secondaryText,
   },
   message: {
-    ...Typography.body,
+    ...Typography.speech,
     color: SemanticColors.primaryText,
   },
 });

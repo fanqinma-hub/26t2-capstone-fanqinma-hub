@@ -1,8 +1,8 @@
 import { Platform } from 'react-native';
 
 export const ComponentSizes = {
-  minimumTouchTarget: 48,
-  microphoneButton: 88,
+  minimumTouchTarget: 56,
+  microphoneButton: 104,
   progressBarHeight: 12,
   contentMaxWidth: 800,
 } as const;

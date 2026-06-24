@@ -11,37 +11,47 @@ export const FontFamilies = {
 export const Typography = {
   body: {
     fontFamily: FontFamilies.bodyRegular,
-    fontSize: 18,
-    lineHeight: 26,
+    fontSize: 20,
+    lineHeight: 30,
   },
   bodyStrong: {
     fontFamily: FontFamilies.bodyBold,
-    fontSize: 18,
-    lineHeight: 26,
+    fontSize: 20,
+    lineHeight: 30,
   },
   bodySmall: {
     fontFamily: FontFamilies.bodyRegular,
-    fontSize: 15,
-    lineHeight: 22,
+    fontSize: 18,
+    lineHeight: 26,
   },
   label: {
     fontFamily: FontFamilies.bodySemiBold,
-    fontSize: 16,
-    lineHeight: 22,
+    fontSize: 20,
+    lineHeight: 28,
   },
   heading: {
     fontFamily: FontFamilies.headingBold,
-    fontSize: 30,
-    lineHeight: 38,
+    fontSize: 36,
+    lineHeight: 44,
   },
   headingSmall: {
     fontFamily: FontFamilies.headingSemiBold,
-    fontSize: 22,
-    lineHeight: 30,
+    fontSize: 26,
+    lineHeight: 34,
   },
   status: {
     fontFamily: FontFamilies.bodyBold,
-    fontSize: 20,
+    fontSize: 22,
+    lineHeight: 30,
+  },
+  speech: {
+    fontFamily: FontFamilies.bodySemiBold,
+    fontSize: 24,
+    lineHeight: 34,
+  },
+  button: {
+    fontFamily: FontFamilies.bodyBold,
+    fontSize: 22,
     lineHeight: 28,
   },
 } as const;

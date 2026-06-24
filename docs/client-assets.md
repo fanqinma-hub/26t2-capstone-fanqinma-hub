@@ -130,6 +130,8 @@
 ## Missing assets pending client confirmation
 
 - Final scene images for Activities 3, 4 and 5.
-- The final Kool mascot file.
+
+The supplied FunWattle logos and Kool character reference are documented in
+`docs/brand-assets.md`.
 
 No copyright ownership is claimed by this document.

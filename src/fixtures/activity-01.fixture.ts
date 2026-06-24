@@ -1,29 +1,31 @@
-import type { ActivityScreenProps } from '@/components/activity';
+import type { ActivityHotspot } from '@/components/activity';
 import { clientScenes } from '@/constants/client-assets';
 
 /**
- * Temporary Role 2 development fixture. Role 3 will replace this with official activity data.
- * Hotspot coordinates are illustrative and have not been confirmed by the client.
+ * Temporary content fixture. Role 3 will replace this with official shared
+ * activity data; the normalized watermelon bounds remain demo-only values.
  */
-export const activity01DevelopmentFixture: ActivityScreenProps = {
+export const activity01DevelopmentFixture: {
+  activityId: string;
+  title: string;
+  sceneSource: typeof clientScenes.activity1.source;
+  currentActivity: number;
+  totalActivities: number;
+  hotspots: ActivityHotspot[];
+} = {
   activityId: '1',
   title: 'Activity 1: Look and describe',
   sceneSource: clientScenes.activity1.source,
-  koolMessage: 'What can you see in this picture?',
   currentActivity: 1,
   totalActivities: 5,
-  visualState: 'tapHelpAvailable',
-  microphoneState: 'idle',
   hotspots: [
     {
-      id: 'temporary-picture-clue',
-      label: 'Tap for clue',
-      x: 0.18,
-      y: 0.2,
-      width: 0.3,
-      height: 0.25,
+      id: 'watermelon-size-clue',
+      label: 'Watermelon size clue',
+      x: 0.05,
+      y: 0.15,
+      width: 0.46,
+      height: 0.64,
     },
   ],
-  onMicrophonePress: () => undefined,
-  onHotspotPress: () => undefined,
 };

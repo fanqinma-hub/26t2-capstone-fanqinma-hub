@@ -12,6 +12,8 @@ import {
   type FeedbackBubbleVariant,
   KoolDialogue,
   type KoolDialogueVariant,
+  KoolMascot,
+  type KoolMascotState,
   ListeningIndicator,
   type ListeningIndicatorState,
   MicrophoneButton,
@@ -39,11 +41,15 @@ const activityVisualStates: ActivityScreenVisualState[] = [
   'gentleCue',
   'reprompt',
   'tapHelpAvailable',
+  'cluePresented',
   'finalListening',
   'processing',
   'success',
+  'retry',
+  'complete',
   'error',
 ];
+const mascotStates: KoolMascotState[] = ['idle', 'wave', 'speaking', 'listening', 'thinking', 'retry', 'success', 'breathe'];
 
 function PreviewSection({ children, title }: { children: ReactNode; title: string }) {
   return (
@@ -72,6 +78,17 @@ export default function UiPreviewScreen() {
         ))}
       </PreviewSection>
 
+      <PreviewSection title="Kool mascot states">
+        <View style={styles.mascotGrid}>
+          {mascotStates.map((state) => (
+            <View key={state} style={styles.mascotState}>
+              <KoolMascot size="small" state={state} />
+              <Text style={styles.mascotStateName}>{state}</Text>
+            </View>
+          ))}
+        </View>
+      </PreviewSection>
+
       <PreviewSection title="Activity 1 client scene">
         <View accessible accessibilityLabel={clientScenes.activity1.label} style={styles.sceneFrame}>
           <Image accessible accessibilityLabel="Activity 1 scene" resizeMode="contain" source={clientScenes.activity1.source} style={styles.sceneImage} />
@@ -87,13 +104,6 @@ export default function UiPreviewScreen() {
             <View key={state} style={styles.activityState}>
               <Text style={styles.activityStateName}>{presentation.previewLabel}</Text>
               {presentation.dialogueVariant ? <KoolDialogue message="What can you see in this picture?" variant={presentation.dialogueVariant} /> : null}
-              {presentation.listeningState ? <ListeningIndicator state={presentation.listeningState} /> : null}
-              {presentation.feedbackVariant ? (
-                <FeedbackBubble
-                  message={presentation.feedbackVariant === 'success' ? 'You did it!' : 'Please try once more.'}
-                  variant={presentation.feedbackVariant}
-                />
-              ) : null}
             </View>
           );
         })}
@@ -176,5 +186,21 @@ const styles = StyleSheet.create({
   activityStateName: {
     ...Typography.status,
     color: SemanticColors.primaryText,
+  },
+  mascotGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: Spacing.two,
+  },
+  mascotState: {
+    alignItems: 'center',
+    backgroundColor: SemanticColors.surface,
+    borderRadius: 16,
+    minWidth: 118,
+    padding: Spacing.one,
+  },
+  mascotStateName: {
+    ...Typography.bodySmall,
+    color: SemanticColors.secondaryText,
   },
 });

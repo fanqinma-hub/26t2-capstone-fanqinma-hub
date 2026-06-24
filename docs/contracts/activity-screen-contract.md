@@ -28,3 +28,11 @@ In particular, its hotspot coordinates have not been client-confirmed.
 Role 3 must replace this fixture with official shared activity data before the
 screen is treated as integrated. Until then, the Role 2 contribution is ready
 for integration, but PROJ-4 is not fully complete.
+
+## Sprint 1 demo adapter
+
+For the Sprint 1 review route, `src/demo/useActivity1DemoFlow.ts` supplies the
+same visual inputs through a deterministic timer and microphone-result demo.
+It remains outside `ActivityScreen` so Roles 4 and 5 can replace timer events,
+recording/STT and retry outcomes without redesigning the activity UI. See
+`docs/sprint1-demo-adapters.md` for the full handover boundary.
