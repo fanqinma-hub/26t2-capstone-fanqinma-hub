@@ -26,6 +26,7 @@ import type {
   DialoguePhase,
   TransitionResult,
 } from '@/types/dialogue.types';
+import { sanitizeKoolMessage } from './child-safe-guardrails';
 
 // ---------------------------------------------------------------------------
 // Factory – creates a fresh idle state
@@ -54,6 +55,38 @@ function action(
   return { phase, ...overrides };
 }
 
+/**
+ * Helper to resolve and sanitise the correct message/subtitle text for a given phase
+ * based on the state's prompt/reprompt/help texts context.
+ */
+function getMessageForPhase(phase: DialoguePhase, state: ConversationState): string | undefined {
+  let rawMsg: string | undefined;
+  switch (phase) {
+    case 'PROMPT':
+    case 'LISTENING':
+      rawMsg = state.currentPromptText || KoolMessages.prompt.default;
+      break;
+    case 'VISUAL_CUE':
+      rawMsg = KoolMessages.visualCue.default;
+      break;
+    case 'REPROMPT':
+      rawMsg = state.currentRepromptText || KoolMessages.reprompt.default;
+      break;
+    case 'TAP_TO_HELP':
+      rawMsg = KoolMessages.tapToHelp.default;
+      break;
+    case 'FINAL_LISTEN':
+      rawMsg = state.currentHelpText || KoolMessages.helpResponse.default;
+      break;
+    case 'AUTO_ADVANCE':
+      rawMsg = KoolMessages.fallback.timeout;
+      break;
+    default:
+      return undefined;
+  }
+  return sanitizeKoolMessage(rawMsg, phase);
+}
+
 // ---------------------------------------------------------------------------
 // Core transition function (pure)
 // ---------------------------------------------------------------------------
@@ -64,26 +97,41 @@ export function transition(
 ): TransitionResult {
   switch (event.type) {
     // -- Start a new prompt ------------------------------------------------
-    case 'START_PROMPT':
+    case 'START_PROMPT': {
+      const promptMsg = sanitizeKoolMessage(
+        event.customPromptText || KoolMessages.prompt.default,
+        'PROMPT'
+      );
       return {
         state: {
           ...createInitialState(),
           phase: 'PROMPT',
           promptId: event.promptId,
+          currentPromptText: event.customPromptText,
+          currentRepromptText: event.customRepromptText,
+          currentHelpText: event.customHelpText,
         },
         action: action('PROMPT', {
-          message: KoolMessages.prompt.default,
+          message: promptMsg,
+          subtitleText: promptMsg,
           koolVariant: 'prompt',
         }),
       };
+    }
 
     // -- Kool finished delivering the prompt text --------------------------
-    case 'PROMPT_DELIVERED':
+    case 'PROMPT_DELIVERED': {
       if (state.phase !== 'PROMPT') return noChange(state);
+      const promptMsg = getMessageForPhase('LISTENING', state);
       return {
         state: { ...state, phase: 'LISTENING', elapsedMs: 0 },
-        action: action('LISTENING', { shouldListen: true }),
+        action: action('LISTENING', {
+          message: promptMsg,
+          subtitleText: promptMsg,
+          shouldListen: true,
+        }),
       };
+    }
 
     // -- Timer tick – drives the silence-timeout chain --------------------
     case 'TIMER_TICK':
@@ -98,25 +146,32 @@ export function transition(
       return handleTapHelp(state);
 
     // -- Manual skip (dev / therapist mode) --------------------------------
-    case 'SKIP':
+    case 'SKIP': {
       if (state.advanceLocked) return noChange(state);
+      const nextPhase = 'AUTO_ADVANCE';
+      const msg = getMessageForPhase(nextPhase, state);
       return {
-        state: { ...state, phase: 'AUTO_ADVANCE', advanceLocked: true },
-        action: action('AUTO_ADVANCE', {
-          message: KoolMessages.fallback.default,
+        state: { ...state, phase: nextPhase, advanceLocked: true },
+        action: action(nextPhase, {
+          message: msg,
+          subtitleText: msg,
           koolVariant: 'gentle',
         }),
       };
+    }
 
     // -- Error (mic permission, STT failure, etc.) -------------------------
-    case 'ERROR':
+    case 'ERROR': {
+      const msg = sanitizeKoolMessage(KoolMessages.fallback.error, 'IDLE');
       return {
         state: { ...state, phase: 'IDLE', lastError: event.error },
         action: action('IDLE', {
-          message: KoolMessages.fallback.error,
+          message: msg,
+          subtitleText: msg,
           koolVariant: 'gentle',
         }),
       };
+    }
 
     // -- Full reset --------------------------------------------------------
     case 'RESET':
@@ -155,10 +210,13 @@ function handleTimerTick(
   // Final listen window expired → auto-advance
   if (elapsedMs >= TimingThresholds.FINAL_LISTEN_MS) {
     if (state.advanceLocked) return noChange(state);
+    const nextPhase = 'AUTO_ADVANCE';
+    const msg = getMessageForPhase(nextPhase, state);
     return {
-      state: { ...updated, phase: 'AUTO_ADVANCE', advanceLocked: true },
-      action: action('AUTO_ADVANCE', {
-        message: KoolMessages.fallback.timeout,
+      state: { ...updated, phase: nextPhase, advanceLocked: true },
+      action: action(nextPhase, {
+        message: msg,
+        subtitleText: msg,
         koolVariant: 'gentle',
       }),
     };
@@ -166,11 +224,13 @@ function handleTimerTick(
 
   // 10 s → show tap-to-help
   if (elapsedMs >= TimingThresholds.TAP_TO_HELP_MS && state.phase !== 'FINAL_LISTEN') {
-    if (state.phase === 'TAP_TO_HELP') return { state: updated, action: action('TAP_TO_HELP', { showTapHelp: true, shouldListen: true }) };
+    const nextPhase = 'TAP_TO_HELP';
+    const msg = getMessageForPhase(nextPhase, state);
     return {
-      state: { ...updated, phase: 'TAP_TO_HELP' },
-      action: action('TAP_TO_HELP', {
-        message: KoolMessages.tapToHelp.default,
+      state: { ...updated, phase: nextPhase },
+      action: action(nextPhase, {
+        message: msg,
+        subtitleText: msg,
         koolVariant: 'gentle',
         showTapHelp: true,
         shouldListen: true,
@@ -180,11 +240,13 @@ function handleTimerTick(
 
   // 6 s → Kool re-prompts
   if (elapsedMs >= TimingThresholds.REPROMPT_MS && state.phase !== 'TAP_TO_HELP') {
-    if (state.phase === 'REPROMPT') return { state: updated, action: action('REPROMPT', { shouldListen: true }) };
+    const nextPhase = 'REPROMPT';
+    const msg = getMessageForPhase(nextPhase, state);
     return {
-      state: { ...updated, phase: 'REPROMPT' },
-      action: action('REPROMPT', {
-        message: KoolMessages.reprompt.default,
+      state: { ...updated, phase: nextPhase },
+      action: action(nextPhase, {
+        message: msg,
+        subtitleText: msg,
         koolVariant: 'gentle',
         shouldListen: true,
       }),
@@ -193,11 +255,15 @@ function handleTimerTick(
 
   // 3 s → visual cue
   if (elapsedMs >= TimingThresholds.VISUAL_CUE_MS) {
-    if (state.phase === 'VISUAL_CUE' || state.phase === 'REPROMPT') return { state: updated, action: action(state.phase, { shouldListen: true }) };
+    const targetPhase = (state.phase === 'REPROMPT' || state.phase === 'TAP_TO_HELP' || state.phase === 'FINAL_LISTEN')
+      ? state.phase
+      : 'VISUAL_CUE';
+    const msg = getMessageForPhase(targetPhase, state);
     return {
-      state: { ...updated, phase: 'VISUAL_CUE' },
-      action: action('VISUAL_CUE', {
-        message: KoolMessages.visualCue.default,
+      state: { ...updated, phase: targetPhase },
+      action: action(targetPhase, {
+        message: msg,
+        subtitleText: msg,
         koolVariant: 'gentle',
         shouldListen: true,
       }),
@@ -205,7 +271,15 @@ function handleTimerTick(
   }
 
   // Still within 0–3 s, keep listening
-  return { state: updated, action: action('LISTENING', { shouldListen: true }) };
+  const msg = getMessageForPhase('LISTENING', state);
+  return {
+    state: updated,
+    action: action('LISTENING', {
+      message: msg,
+      subtitleText: msg,
+      shouldListen: true,
+    }),
+  };
 }
 
 // ---------------------------------------------------------------------------
@@ -229,15 +303,18 @@ function handleUserResponse(state: ConversationState): TransitionResult {
 
   // Too many attempts → auto-advance
   if (newAttemptCount >= SafetyLimits.MAX_ATTEMPTS_PER_PROMPT) {
+    const nextPhase = 'AUTO_ADVANCE';
+    const msg = getMessageForPhase(nextPhase, state);
     return {
       state: {
         ...state,
-        phase: 'AUTO_ADVANCE',
+        phase: nextPhase,
         attemptCount: newAttemptCount,
         advanceLocked: true,
       },
-      action: action('AUTO_ADVANCE', {
-        message: KoolMessages.fallback.default,
+      action: action(nextPhase, {
+        message: msg,
+        subtitleText: msg,
         koolVariant: 'gentle',
       }),
     };
@@ -266,15 +343,19 @@ function handleTapHelp(state: ConversationState): TransitionResult {
     return noChange(state);
   }
 
+  const nextPhase = 'FINAL_LISTEN';
+  const msg = getMessageForPhase(nextPhase, state);
+
   return {
     state: {
       ...state,
-      phase: 'FINAL_LISTEN',
+      phase: nextPhase,
       scaffoldUsed: true,
       elapsedMs: TimingThresholds.TAP_TO_HELP_MS, // keep elapsed baseline
     },
-    action: action('FINAL_LISTEN', {
-      message: KoolMessages.helpResponse.default,
+    action: action(nextPhase, {
+      message: msg,
+      subtitleText: msg,
       koolVariant: 'gentle',
       shouldListen: true,
     }),
@@ -286,5 +367,6 @@ function handleTapHelp(state: ConversationState): TransitionResult {
 // ---------------------------------------------------------------------------
 
 function noChange(state: ConversationState): TransitionResult {
-  return { state, action: action(state.phase) };
+  const msg = getMessageForPhase(state.phase, state);
+  return { state, action: action(state.phase, { message: msg, subtitleText: msg }) };
 }
