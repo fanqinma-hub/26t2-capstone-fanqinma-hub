@@ -41,7 +41,12 @@ import type { KoolDialogueVariant } from '@/components/child-ui/KoolDialogue';
 
 export interface ConversationTimerActions {
   /** Begin a new prompt cycle for the given promptId. */
-  startPrompt: (promptId: string) => void;
+  startPrompt: (
+    promptId: string,
+    customPromptText?: string,
+    customRepromptText?: string,
+    customHelpText?: string
+  ) => void;
   /** Notify that Kool has finished speaking the prompt text. */
   promptDelivered: () => void;
   /** Called when the child's voice transcript is available. */
@@ -59,6 +64,8 @@ export interface ConversationTimerResult {
   phase: DialoguePhase;
   /** Message Kool should display. */
   koolMessage: string | undefined;
+  /** Visual subtitle text to render. */
+  subtitleText: string | undefined;
   /** Visual variant for KoolDialogue component. */
   koolVariant: KoolDialogueVariant | undefined;
   /** Whether the microphone should be active. */
@@ -91,7 +98,9 @@ export function useConversationTimer(): ConversationTimerResult {
   const stateRef = useRef<ConversationState>(state);
 
   // Keep ref in sync with state
-  stateRef.current = state;
+  useEffect(() => {
+    stateRef.current = state;
+  }, [state]);
 
   // ------------------------------------------------------------------
   // Timer management
@@ -163,8 +172,19 @@ export function useConversationTimer(): ConversationTimerResult {
   // ------------------------------------------------------------------
 
   const startPrompt = useCallback(
-    (promptId: string) => {
-      dispatch({ type: 'START_PROMPT', promptId });
+    (
+      promptId: string,
+      customPromptText?: string,
+      customRepromptText?: string,
+      customHelpText?: string
+    ) => {
+      dispatch({
+        type: 'START_PROMPT',
+        promptId,
+        customPromptText,
+        customRepromptText,
+        customHelpText,
+      });
     },
     [dispatch],
   );
@@ -210,6 +230,7 @@ export function useConversationTimer(): ConversationTimerResult {
   return {
     phase: state.phase,
     koolMessage: lastAction.message,
+    subtitleText: lastAction.subtitleText,
     koolVariant: lastAction.koolVariant,
     shouldListen: lastAction.shouldListen ?? false,
     showTapHelp: lastAction.showTapHelp ?? false,
