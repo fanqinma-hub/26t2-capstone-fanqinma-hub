@@ -3,19 +3,24 @@
  */
 import { Redirect } from 'expo-router';
 import type { ReactNode } from 'react';
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Image, ScrollView, StyleSheet, Text, View } from 'react-native';
 
+import { activityScreenVisualStatePresentation } from '@/components/activity/ActivityScreen';
+import type { ActivityScreenVisualState } from '@/components/activity';
 import {
   FeedbackBubble,
   type FeedbackBubbleVariant,
   KoolDialogue,
   type KoolDialogueVariant,
+  KoolMascot,
+  type KoolMascotState,
   ListeningIndicator,
   type ListeningIndicatorState,
   MicrophoneButton,
   type MicrophoneButtonState,
   ProgressIndicator,
 } from '@/components/child-ui';
+import { clientScenes } from '@/constants/client-assets';
 import { ComponentSizes, SemanticColors, Spacing, Typography } from '@/theme';
 
 const dialogueVariants: KoolDialogueVariant[] = ['default', 'prompt', 'gentle'];
@@ -30,6 +35,21 @@ const listeningStates: ListeningIndicatorState[] = [
   'error',
 ];
 const feedbackVariants: FeedbackBubbleVariant[] = ['neutral', 'encouragement', 'success', 'help', 'error'];
+const activityVisualStates: ActivityScreenVisualState[] = [
+  'prompt',
+  'listening',
+  'gentleCue',
+  'reprompt',
+  'tapHelpAvailable',
+  'cluePresented',
+  'finalListening',
+  'processing',
+  'success',
+  'retry',
+  'complete',
+  'error',
+];
+const mascotStates: KoolMascotState[] = ['idle', 'wave', 'speaking', 'listening', 'thinking', 'retry', 'success', 'breathe'];
 
 function PreviewSection({ children, title }: { children: ReactNode; title: string }) {
   return (
@@ -56,6 +76,37 @@ export default function UiPreviewScreen() {
         {dialogueVariants.map((variant) => (
           <KoolDialogue key={variant} message="What can you see in this picture?" variant={variant} />
         ))}
+      </PreviewSection>
+
+      <PreviewSection title="Kool mascot states">
+        <View style={styles.mascotGrid}>
+          {mascotStates.map((state) => (
+            <View key={state} style={styles.mascotState}>
+              <KoolMascot size="small" state={state} />
+              <Text style={styles.mascotStateName}>{state}</Text>
+            </View>
+          ))}
+        </View>
+      </PreviewSection>
+
+      <PreviewSection title="Activity 1 client scene">
+        <View accessible accessibilityLabel={clientScenes.activity1.label} style={styles.sceneFrame}>
+          <Image accessible accessibilityLabel="Activity 1 scene" resizeMode="contain" source={clientScenes.activity1.source} style={styles.sceneImage} />
+        </View>
+      </PreviewSection>
+
+      <PreviewSection title="Activity visual states">
+        <Text style={styles.sectionDescription}>These are the visual presentations available to the Activity 1 shell. State transitions remain outside this preview.</Text>
+        {activityVisualStates.map((state) => {
+          const presentation = activityScreenVisualStatePresentation[state];
+
+          return (
+            <View key={state} style={styles.activityState}>
+              <Text style={styles.activityStateName}>{presentation.previewLabel}</Text>
+              {presentation.dialogueVariant ? <KoolDialogue message="What can you see in this picture?" variant={presentation.dialogueVariant} /> : null}
+            </View>
+          );
+        })}
       </PreviewSection>
 
       <PreviewSection title="Microphone button">
@@ -113,5 +164,43 @@ const styles = StyleSheet.create({
   sectionTitle: {
     ...Typography.headingSmall,
     color: SemanticColors.primaryText,
+  },
+  sectionDescription: {
+    ...Typography.bodySmall,
+    color: SemanticColors.secondaryText,
+  },
+  sceneFrame: {
+    aspectRatio: 1.5,
+    backgroundColor: SemanticColors.surface,
+    borderRadius: 24,
+    overflow: 'hidden',
+    width: '100%',
+  },
+  sceneImage: {
+    height: '100%',
+    width: '100%',
+  },
+  activityState: {
+    gap: Spacing.two,
+  },
+  activityStateName: {
+    ...Typography.status,
+    color: SemanticColors.primaryText,
+  },
+  mascotGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: Spacing.two,
+  },
+  mascotState: {
+    alignItems: 'center',
+    backgroundColor: SemanticColors.surface,
+    borderRadius: 16,
+    minWidth: 118,
+    padding: Spacing.one,
+  },
+  mascotStateName: {
+    ...Typography.bodySmall,
+    color: SemanticColors.secondaryText,
   },
 });

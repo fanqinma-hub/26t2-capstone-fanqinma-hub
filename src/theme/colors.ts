@@ -8,8 +8,11 @@ export const BrandColors = {
 export const SemanticColors = {
   background: '#FFF9F1',
   surface: '#FFFFFF',
+  surfaceWarm: '#FFF0D9',
   surfaceMuted: '#F3EEE8',
   surfaceAccent: '#FFF0D9',
+  textPrimary: '#2B1B1C',
+  textSecondary: '#5D4A4B',
   primaryText: '#2B1B1C',
   secondaryText: '#5D4A4B',
   success: '#2E7D32',
@@ -17,6 +20,7 @@ export const SemanticColors = {
   error: '#B42318',
   focus: '#205A8B',
   disabled: '#8C8C8C',
+  overlay: 'rgba(43, 27, 28, 0.48)',
 } as const;
 
 export const Colors = {
