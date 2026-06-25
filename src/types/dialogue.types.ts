@@ -31,7 +31,13 @@ export type DialoguePhase =
 // ---------------------------------------------------------------------------
 
 export type DialogueEvent =
-  | { type: 'START_PROMPT'; promptId: string }
+  | {
+      type: 'START_PROMPT';
+      promptId: string;
+      customPromptText?: string;
+      customRepromptText?: string;
+      customHelpText?: string;
+    }
   | { type: 'PROMPT_DELIVERED' }           // Kool finished speaking
   | { type: 'TIMER_TICK'; elapsedMs: number }
   | { type: 'USER_RESPONSE'; transcript: string }
@@ -49,6 +55,8 @@ export interface DialogueAction {
   phase: DialoguePhase;
   /** Optional message for Kool to display. */
   message?: string;
+  /** Optional subtitle text for UI to render. */
+  subtitleText?: string;
   /** Which KoolDialogue visual variant to use. */
   koolVariant?: KoolDialogueVariant;
   /** If true, the microphone should be activated. */
@@ -76,6 +84,12 @@ export interface ConversationState {
   advanceLocked: boolean;
   /** Latest error message, if any. */
   lastError: string | null;
+  /** Custom prompt text. */
+  currentPromptText?: string;
+  /** Custom reprompt text. */
+  currentRepromptText?: string;
+  /** Custom help text. */
+  currentHelpText?: string;
 }
 
 // ---------------------------------------------------------------------------
