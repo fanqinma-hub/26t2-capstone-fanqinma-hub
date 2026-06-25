@@ -12,7 +12,7 @@
  */
 
 import { KoolMessages } from '@/constants/conversation.config';
-import { sanitizeKoolMessage } from './child-safe-guardrails';
+import { sanitizeKoolMessage, generateClinicalRecast } from './child-safe-guardrails';
 
 // ---------------------------------------------------------------------------
 // Recast – used when the child responds at Tier 1 (noun only)
@@ -28,12 +28,7 @@ import { sanitizeKoolMessage } from './child-safe-guardrails';
  * @param adjective  The target size adjective for this prompt.
  */
 export function generateRecast(noun: string, adjective: string): string {
-  const message = KoolMessages.recast.template
-    .replace('{noun}', noun)
-    .replace('{adjective}', adjective)
-    .replace('{noun}', noun); // template has {noun} twice
-
-  return sanitizeKoolMessage(message, 'PROMPT');
+  return generateClinicalRecast(noun, adjective);
 }
 
 // ---------------------------------------------------------------------------
