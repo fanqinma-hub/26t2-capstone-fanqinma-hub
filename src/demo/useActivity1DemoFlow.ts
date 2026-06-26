@@ -1,8 +1,13 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 
-import type { KoolMascotState, MicrophoneButtonState } from '@/components/child-ui';
 import type { ActivityScreenVisualState } from '@/components/activity';
+import type { KoolMascotState, MicrophoneButtonState } from '@/components/child-ui';
+
 import { conversationTiming } from '@/config/conversation-timing.config';
+import { KOOL_SILENCE_COPY } from '@/conversation';
+
+import { useConversationTimer } from '@/hooks/useConversationTimer';
+import type { ConversationPhase, DialogueAction } from '@/types/conversation';
 
 export type Activity1DemoState =
   | 'intro'
@@ -37,67 +42,119 @@ type DemoPresentation = {
   isSpeaking?: boolean;
 };
 
+function mapConversationPhaseToDemoState(phase: ConversationPhase): Activity1DemoState {
+  switch (phase) {
+    case 'intro':
+      return 'intro';
+
+    case 'prompt':
+      return 'prompt';
+
+    case 'listening':
+      return 'listening';
+
+    case 'gentleCue':
+      return 'gentleCue';
+
+    case 'reprompt':
+      return 'reprompt';
+
+    case 'tapHelpAvailable':
+      return 'tapHelpAvailable';
+
+    case 'cluePresented':
+      return 'cluePresented';
+
+    case 'finalListening':
+      return 'finalListening';
+
+    case 'processing':
+      return 'processing';
+
+    case 'tierFeedback':
+      return 'success';
+
+    case 'autoAdvance':
+      return 'retry';
+
+    case 'complete':
+      return 'complete';
+
+    case 'retry':
+      return 'retry';
+
+    case 'success':
+      return 'success';
+
+    case 'error':
+      return 'retry';
+
+    default:
+      return 'prompt';
+  }
+}
+
 const presentationByState: Record<Activity1DemoState, DemoPresentation> = {
   intro: {
-    message: 'Hi! Let’s find some size words together.',
+    message: KOOL_SILENCE_COPY.intro,
     mascotState: 'wave',
     microphoneState: 'idle',
     visualState: 'prompt',
     isSpeaking: true,
   },
   prompt: {
-    message: 'What can you see in this picture?',
+    message: KOOL_SILENCE_COPY.prompt,
     mascotState: 'speaking',
     microphoneState: 'idle',
     visualState: 'prompt',
     isSpeaking: true,
   },
   listening: {
-    message: 'I’m listening. Tell me a size word when you are ready.',
+    message: KOOL_SILENCE_COPY.listening,
     mascotState: 'listening',
     microphoneState: 'listening',
     statusLine: 'Listening',
     visualState: 'listening',
   },
   gentleCue: {
-    message: 'Take your time. What looks very big?',
+    message: KOOL_SILENCE_COPY.gentleCue,
     mascotState: 'speaking',
     microphoneState: 'idle',
     visualState: 'gentleCue',
     isSpeaking: true,
   },
   reprompt: {
-    message: 'Look at the watermelon and the cup. Which one is big?',
+    message: KOOL_SILENCE_COPY.reprompt,
     mascotState: 'speaking',
     microphoneState: 'idle',
     visualState: 'reprompt',
     isSpeaking: true,
   },
   tapHelpAvailable: {
-    message: 'Need a clue? Tap the little question mark.',
+    message: KOOL_SILENCE_COPY.tapHelpAvailable,
     mascotState: 'idle',
     microphoneState: 'idle',
     visualState: 'tapHelpAvailable',
   },
   cluePresented: {
-    message: 'This is a watermelon. Can you tell me its size?',
+    message: KOOL_SILENCE_COPY.cluePresented,
     mascotState: 'speaking',
     microphoneState: 'idle',
     visualState: 'cluePresented',
     isSpeaking: true,
   },
   finalListening: {
-    message: 'One last try. Is it big, small, tiny, huge, or medium?',
+    message: KOOL_SILENCE_COPY.finalListening,
     mascotState: 'speaking',
     microphoneState: 'idle',
     visualState: 'finalListening',
     isSpeaking: true,
   },
   processing: {
-    message: 'Kool is thinking…',
+    message: KOOL_SILENCE_COPY.processing,
     mascotState: 'thinking',
     microphoneState: 'processing',
-    statusLine: 'Kool is thinking…',
+    statusLine: KOOL_SILENCE_COPY.processing,
     visualState: 'processing',
   },
   success: {
@@ -113,7 +170,7 @@ const presentationByState: Record<Activity1DemoState, DemoPresentation> = {
     visualState: 'retry',
   },
   complete: {
-    message: 'You finished Activity 1. Let’s look at your demo report!',
+    message: KOOL_SILENCE_COPY.complete,
     mascotState: 'success',
     microphoneState: 'disabled',
     visualState: 'complete',
@@ -129,17 +186,18 @@ export type UseActivity1DemoFlowOptions = {
 
 export function useActivity1DemoFlow({
   initialState = 'prompt',
-  outcome = 'success',
   copy,
   onOutcomeResolved,
 }: UseActivity1DemoFlowOptions = {}) {
   const [state, setState] = useState<Activity1DemoState>(initialState);
-  const stateRef = useRef(state);
-  const timerIds = useRef<ReturnType<typeof setTimeout>[]>([]);
+  const [lastDialogueAction, setLastDialogueAction] = useState<DialogueAction | null>(null);
+
+  const stateRef = useRef<Activity1DemoState>(state);
+  const demoTimerIds = useRef<ReturnType<typeof setTimeout>[]>([]);
 
   const clearTimers = useCallback(() => {
-    timerIds.current.forEach(clearTimeout);
-    timerIds.current = [];
+    demoTimerIds.current.forEach((timerId) => clearTimeout(timerId));
+    demoTimerIds.current = [];
   }, []);
 
   const transition = useCallback((nextState: Activity1DemoState) => {
@@ -147,76 +205,125 @@ export function useActivity1DemoFlow({
     setState(nextState);
   }, []);
 
-  const schedule = useCallback((callback: () => void, delayMs: number) => {
-    const timerId = setTimeout(callback, delayMs);
-    timerIds.current.push(timerId);
-  }, []);
+  const handleTimerAction = useCallback(
+    (action: DialogueAction) => {
+      const systemTime = new Date(action.timestamp).toLocaleTimeString(undefined, {
+        hour12: false,
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+        fractionalSecondDigits: 3,
+      });
 
-  const schedulePromptSequence = useCallback(() => {
+      console.log('[timer action]', action.type, action.phase, systemTime);
+
+      setLastDialogueAction(action);
+
+      // STOP_TIMERS is only for lifecycle/debug logging.
+      // It should not change the visible Activity 1 state.
+      if (action.type === 'STOP_TIMERS') {
+        return;
+      }
+
+      transition(mapConversationPhaseToDemoState(action.phase));
+    },
+    [transition],
+  );
+
+  const handleTimerAutoAdvance = useCallback(() => {
+    // Sprint 1 fallback:
+    // Later this should move to the next prompt/activity.
+    onOutcomeResolved?.('retry');
+    transition('retry');
+  }, [onOutcomeResolved, transition]);
+
+  const {
+    phase: conversationPhase,
+    scaffoldUsed,
+    startPrompt,
+    startListeningAfterKoolSpeech,
+    restartListeningTimer,
+    pauseFlowTimer,
+    resumeFlowTimer,
+    stopTimers,
+    handleTapToHelp,
+  } = useConversationTimer({
+    isActive: false,
+    onAction: handleTimerAction,
+    onAutoAdvance: handleTimerAutoAdvance,
+  });
+
+  const startPromptFlow = useCallback(() => {
     clearTimers();
-    transition('prompt');
-    schedule(() => transition('gentleCue'), activity1DemoTiming.gentleCueMs);
-    schedule(() => transition('reprompt'), activity1DemoTiming.repromptMs);
-    schedule(() => transition('tapHelpAvailable'), activity1DemoTiming.tapToHelpMs);
-  }, [clearTimers, schedule, transition]);
-
-  const scheduleInitialPromptTimers = useCallback(() => {
-    clearTimers();
-    schedule(() => transition('gentleCue'), activity1DemoTiming.gentleCueMs);
-    schedule(() => transition('reprompt'), activity1DemoTiming.repromptMs);
-    schedule(() => transition('tapHelpAvailable'), activity1DemoTiming.tapToHelpMs);
-  }, [clearTimers, schedule, transition]);
-
-  const resolveOutcome = useCallback(() => {
-    onOutcomeResolved?.(outcome);
-    const nextState = outcome === 'retry' ? 'retry' : 'success';
-    transition(nextState);
-    if (nextState === 'success') {
-      schedule(() => transition('complete'), activity1DemoTiming.successCelebrationMs);
-    }
-  }, [onOutcomeResolved, outcome, schedule, transition]);
+    startPrompt();
+  }, [clearTimers, startPrompt]);
 
   const onMicrophonePress = useCallback(() => {
-    if (['processing', 'success', 'complete'].includes(stateRef.current)) return;
+    if (['processing', 'success', 'complete'].includes(stateRef.current)) {
+      return;
+    }
 
     clearTimers();
-    transition('listening');
-    schedule(() => transition('processing'), activity1DemoTiming.microphoneListeningMs);
-    schedule(resolveOutcome, activity1DemoTiming.microphoneListeningMs + activity1DemoTiming.processingMs);
-  }, [clearTimers, resolveOutcome, schedule, transition]);
+
+    // When the child taps to speak, restart the Role 4 silence timer.
+    // This means gentleCue appears after 3s, reprompt after another 6s,
+    // and tap-to-help after another 10s if no valid response is received.
+    restartListeningTimer();
+  }, [clearTimers, restartListeningTimer]);
 
   const onHelpPress = useCallback(() => {
-    if (stateRef.current !== 'tapHelpAvailable') return;
+    if (stateRef.current !== 'tapHelpAvailable') {
+      return;
+    }
 
     clearTimers();
-    transition('cluePresented');
-    schedule(() => transition('finalListening'), activity1DemoTiming.clueReadMs);
-    schedule(resolveOutcome, activity1DemoTiming.clueReadMs + activity1DemoTiming.finalListeningMs);
-  }, [clearTimers, resolveOutcome, schedule, transition]);
+
+    // Role 4 owns cluePresented -> finalListening -> autoAdvance.
+    handleTapToHelp();
+  }, [clearTimers, handleTapToHelp]);
 
   const selectDevelopmentState = useCallback(
     (nextState: Activity1DemoState) => {
       if (nextState === 'prompt') {
-        schedulePromptSequence();
+        startPromptFlow();
         return;
       }
 
       clearTimers();
+      stopTimers();
       transition(nextState);
     },
-    [clearTimers, schedulePromptSequence, transition],
+    [clearTimers, startPromptFlow, stopTimers, transition],
   );
 
   useEffect(() => {
-    if (initialState === 'prompt') scheduleInitialPromptTimers();
-    return clearTimers;
-  }, [clearTimers, initialState, scheduleInitialPromptTimers]);
+    if (initialState === 'prompt') {
+      startPromptFlow();
+    } else {
+      transition(initialState);
+    }
+
+    return () => {
+      clearTimers();
+      stopTimers();
+    };
+
+    // Run once for the initial demo state.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const presentation = presentationByState[state];
+
   return {
     ...presentation,
     message: copy?.[state] ?? presentation.message,
     clearTimers,
+    conversationPhase,
+    lastDialogueAction,
+    scaffoldUsed,
+    startListeningAfterKoolSpeech,
+    pauseFlowTimer,
+    resumeFlowTimer,
     isHelpAvailable: state === 'tapHelpAvailable' || state === 'cluePresented',
     isHighlightingHelp: state === 'cluePresented',
     onHelpPress,

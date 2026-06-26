@@ -1,5 +1,6 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+
 import { Pressable, SafeAreaView, StyleSheet, Text, View } from 'react-native';
 
 import { ActivityScreen } from '@/components/activity';
@@ -13,16 +14,18 @@ import {
   activity01SessionSeed,
   toActivity01DemoCopy,
 } from '@/fixtures/activity-01.fixture';
-import { useSession } from '@/session';
 import { speakKoolPrompt, stopKoolSpeech } from '@/services/koolSpeech';
+import { useSession } from '@/session';
 import { BrandColors, Radii, SemanticColors, Spacing, Typography } from '@/theme';
 
 const developmentStates: Activity1DemoState[] = [
   'prompt',
+  'listening',
   'gentleCue',
   'reprompt',
   'tapHelpAvailable',
-  'listening',
+  'cluePresented',
+  'finalListening',
   'processing',
   'success',
   'retry',
@@ -71,21 +74,27 @@ export default function ActivityRoute() {
     demoState?: string | string[];
     outcome?: string | string[];
   }>();
+
   const router = useRouter();
   const { dispatch, resetSession } = useSession();
+
   const [selectedPromptIndex, setSelectedPromptIndex] = useState(0);
+
   const sessionStartedRef = useRef(false);
   const sessionCompletedRef = useRef(false);
   const scaffoldUsedRef = useRef(false);
+
   const activityId = firstParam(params.id);
   const requestedState = asDemoState(firstParam(params.demoState));
   const outcome: Activity1DemoOutcome =
     firstParam(params.outcome) === 'retry' ? 'retry' : 'success';
+
   const prompt = activity01Definition.prompts[selectedPromptIndex];
   const demoCopy = useMemo(() => toActivity01DemoCopy(prompt), [prompt]);
 
   const startSession = useCallback(() => {
     const startedAt = new Date().toISOString();
+
     scaffoldUsedRef.current = false;
     sessionCompletedRef.current = false;
 
@@ -96,10 +105,12 @@ export default function ActivityRoute() {
       contentVersion: activity01SessionSeed.contentVersion,
       startedAt,
     });
+
     dispatch({
       type: 'SET_ACTIVE_ACTIVITY',
       activityId: activity01SessionSeed.activityId,
     });
+
     dispatch({
       type: 'OPEN_PROMPT',
       activityId: activity01SessionSeed.activityId,
@@ -117,6 +128,7 @@ export default function ActivityRoute() {
   const handleMockOutcome = useCallback(
     (resolvedOutcome: Activity1DemoOutcome) => {
       const timestamp = new Date().toISOString();
+
       dispatch({
         type: 'RECORD_ATTEMPT',
         attempt: createDevelopmentMockAttempt({
@@ -144,13 +156,17 @@ export default function ActivityRoute() {
       const nextPromptIndex = activity01Definition.prompts.findIndex(
         (candidate) => candidate.id === questionId,
       );
+
       if (nextPromptIndex < 0) return;
 
       const nextPrompt = activity01Definition.prompts[nextPromptIndex];
       const openedAt = new Date().toISOString();
+
       setSelectedPromptIndex(nextPromptIndex);
+
       scaffoldUsedRef.current = false;
       sessionCompletedRef.current = false;
+
       dispatch({
         type: 'OPEN_PROMPT',
         activityId: activity01SessionSeed.activityId,
@@ -158,6 +174,7 @@ export default function ActivityRoute() {
         promptText: nextPrompt.koolPrompt,
         openedAt,
       });
+
       demo.selectDevelopmentState('prompt');
     },
     [demo, dispatch],
@@ -165,20 +182,29 @@ export default function ActivityRoute() {
 
   const handleHelpPress = useCallback(() => {
     if (demo.state !== 'tapHelpAvailable') return;
+
     scaffoldUsedRef.current = true;
-    dispatch({ type: 'MARK_SCAFFOLD_USED', promptId: prompt.id });
+
+    dispatch({
+      type: 'MARK_SCAFFOLD_USED',
+      promptId: prompt.id,
+    });
+
     demo.onHelpPress();
   }, [demo, dispatch, prompt.id]);
 
   useEffect(() => {
     if (sessionStartedRef.current) return;
+
     sessionStartedRef.current = true;
     startSession();
   }, [startSession]);
 
   useEffect(() => {
     if (demo.state !== 'complete' || sessionCompletedRef.current) return;
+
     sessionCompletedRef.current = true;
+
     dispatch({
       type: 'COMPLETE_SESSION',
       completedAt: new Date().toISOString(),
@@ -186,9 +212,36 @@ export default function ActivityRoute() {
   }, [demo.state, dispatch]);
 
   useEffect(() => {
-    void speakKoolPrompt(demo.message);
-    return stopKoolSpeech;
-  }, [demo.message]);
+    if (!demo.isSpeaking) {
+      stopKoolSpeech();
+      return undefined;
+    }
+
+    let isCurrentSpeech = true;
+
+    // Kool is speaking, so this period should not count as child silence.
+    demo.pauseFlowTimer();
+
+    void speakKoolPrompt(demo.message, {
+      onDone: () => {
+        if (!isCurrentSpeech) return;
+
+        // Kool has finished speaking, so the silence timer can continue.
+        demo.resumeFlowTimer();
+      },
+      onError: () => {
+        if (!isCurrentSpeech) return;
+
+        // If TTS fails, continue the timer so the activity does not get stuck.
+        demo.resumeFlowTimer();
+      },
+    });
+
+    return () => {
+      isCurrentSpeech = false;
+      stopKoolSpeech();
+    };
+  }, [demo.isSpeaking, demo.message, demo.pauseFlowTimer, demo.resumeFlowTimer]);
 
   if (activityId !== '1') {
     return (
@@ -206,11 +259,7 @@ export default function ActivityRoute() {
   return (
     <ActivityScreen
       {...activity01DevelopmentFixture}
-      activeHotspotId={
-        demo.isHighlightingHelp
-          ? prompt.hotspotId
-          : undefined
-      }
+      activeHotspotId={demo.isHighlightingHelp ? prompt.hotspotId : undefined}
       completeActionLabel="View demo report"
       developmentControls={
         <View style={styles.developmentStack}>
@@ -230,11 +279,7 @@ export default function ActivityRoute() {
       onCompletePress={() => router.push('/report')}
       onHotspotPress={handleHelpPress}
       onMicrophonePress={demo.onMicrophonePress}
-      hotspots={
-        demo.isHelpAvailable
-          ? activity01DevelopmentFixture.hotspots
-          : undefined
-      }
+      hotspots={demo.isHelpAvailable ? activity01DevelopmentFixture.hotspots : undefined}
       statusLine={demo.statusLine}
       visualState={demo.visualState}
     />
