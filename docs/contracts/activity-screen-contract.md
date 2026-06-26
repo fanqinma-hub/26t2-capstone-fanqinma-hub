@@ -8,7 +8,7 @@ not the team's domain model or runtime state machine.
 
 | Provider | Inputs supplied to the visual shell |
 | --- | --- |
-| Role 3 | Activity identity and title, scene asset key, prompt text, activity progress, and optional hotspots. Hotspot `x`, `y`, `width`, and `height` must be normalized values from 0 to 1. |
+| Role 3 | `ActivityDefinition` and the screen adapter in `src/fixtures/activity-01.fixture.ts`: identity, scene asset, Size Words vocabulary, accepted responses, activity progress, and optional help hotspots. Hotspot coordinates are normalized from 0 to 1. |
 | Role 4 | A conversation state mapped to `ActivityScreenVisualState`. Role 4 owns timing, transitions, and any retry logic. |
 | Role 5 | A voice-pipeline state mapped to `MicrophoneButtonState`, plus the microphone callback implementation. Role 5 owns recording, permissions, STT, and processing. |
 
@@ -19,15 +19,22 @@ microphone presentation, feedback, progress, and optional hotspot affordances.
 The shell has no timers, domain rules, persistence, recording, STT, scoring,
 rewards, reports, or conversation state-machine logic.
 
-## Temporary fixture
+## Shared Activity 1 content
 
-`src/fixtures/activity-01.fixture.ts` is a development-only fixture for
-`/activity/1`. Its copy, callbacks, and hotspot coordinates are mock values.
-In particular, its hotspot coordinates have not been client-confirmed.
+`src/fixtures/activity-01.fixture.ts` contains the Activity 1 source data and
+the `toActivityScreenContent` adapter. It provides structured prompts,
+accepted-response examples, target size adjectives, and mappings to the
+watermelon, strawberry, cooking-pot and teacup hotspots.
 
-Role 3 must replace this fixture with official shared activity data before the
-screen is treated as integrated. Until then, the Role 2 contribution is ready
-for integration, but PROJ-4 is not fully complete.
+The original watermelon hotspot remains an optional clue affordance. It does
+not identify or submit the child's answer. The fixture also exports
+`activity01SessionSeed`, which Activity 1 uses to initialise the shared
+in-memory SessionContext.
+
+The SessionContext records the active activity/prompt, scaffold use, complete
+transcript, detected size words, response tier, target adjective and
+confidence. It does not store raw audio or raw Azure payloads, and it does not
+control the Role 2 UI.
 
 ## Sprint 1 demo adapter
 

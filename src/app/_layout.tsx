@@ -14,6 +14,7 @@ import * as SplashScreen from 'expo-splash-screen';
 import { useEffect } from 'react';
 import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
 
+import { SessionProvider } from '@/session';
 import { SemanticColors, Spacing, Typography } from '@/theme';
 
 void SplashScreen.preventAutoHideAsync();
@@ -52,7 +53,11 @@ export default function RootLayout() {
     );
   }
 
-  return <Slot />;
+  return (
+    <SessionProvider>
+      <Slot />
+    </SessionProvider>
+  );
 }
 
 const styles = StyleSheet.create({
