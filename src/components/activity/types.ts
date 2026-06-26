@@ -45,7 +45,7 @@ export type ActivityScreenProps = {
   isKoolSpeaking?: boolean;
   statusLine?: string;
   feedback?: ActivityFeedback;
-  hotspots?: ActivityHotspot[];
+  hotspots?: readonly ActivityHotspot[];
   activeHotspotId?: string;
   onMicrophonePress: () => void;
   onHotspotPress?: (hotspotId: string) => void;

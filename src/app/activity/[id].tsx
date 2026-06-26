@@ -1,33 +1,62 @@
-import { useEffect } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Pressable, SafeAreaView, StyleSheet, Text, View } from 'react-native';
 
 import { ActivityScreen } from '@/components/activity';
+import { SessionStateInspector } from '@/components/dev';
+import { createDevelopmentMockAttempt } from '@/demo/createDevelopmentMockAttempt';
 import type { Activity1DemoOutcome, Activity1DemoState } from '@/demo/useActivity1DemoFlow';
 import { useActivity1DemoFlow } from '@/demo/useActivity1DemoFlow';
-import { activity01DevelopmentFixture } from '@/fixtures/activity-01.fixture';
+import {
+  activity01Definition,
+  activity01DevelopmentFixture,
+  activity01SessionSeed,
+  toActivity01DemoCopy,
+} from '@/fixtures/activity-01.fixture';
+import { useSession } from '@/session';
 import { speakKoolPrompt, stopKoolSpeech } from '@/services/koolSpeech';
 import { BrandColors, Radii, SemanticColors, Spacing, Typography } from '@/theme';
 
-const developmentStates: Activity1DemoState[] = ['prompt', 'gentleCue', 'reprompt', 'tapHelpAvailable', 'listening', 'processing', 'success', 'retry', 'complete'];
+const developmentStates: Activity1DemoState[] = [
+  'prompt',
+  'gentleCue',
+  'reprompt',
+  'tapHelpAvailable',
+  'listening',
+  'processing',
+  'success',
+  'retry',
+  'complete',
+];
 
 function firstParam(value: string | string[] | undefined) {
   return Array.isArray(value) ? value[0] : value;
 }
 
 function asDemoState(value: string | undefined): Activity1DemoState | undefined {
-  return developmentStates.includes(value as Activity1DemoState) ? (value as Activity1DemoState) : undefined;
+  return developmentStates.includes(value as Activity1DemoState)
+    ? (value as Activity1DemoState)
+    : undefined;
 }
 
-function DevelopmentStatePicker({ onSelect }: { onSelect: (state: Activity1DemoState) => void }) {
+function DevelopmentStatePicker({
+  onSelect,
+}: {
+  onSelect: (state: Activity1DemoState) => void;
+}) {
   if (!__DEV__) return null;
 
   return (
-    <View accessibilityLabel="Development-only Activity 1 state controls" style={styles.developmentControls}>
+    <View
+      accessibilityLabel="Development-only Activity 1 state controls"
+      style={styles.developmentControls}>
       <Text style={styles.developmentTitle}>Demo controls</Text>
       <View style={styles.developmentButtons}>
         {developmentStates.map((state) => (
-          <Pressable key={state} onPress={() => onSelect(state)} style={styles.developmentButton}>
+          <Pressable
+            key={state}
+            onPress={() => onSelect(state)}
+            style={styles.developmentButton}>
             <Text style={styles.developmentButtonText}>{state}</Text>
           </Pressable>
         ))}
@@ -37,12 +66,124 @@ function DevelopmentStatePicker({ onSelect }: { onSelect: (state: Activity1DemoS
 }
 
 export default function ActivityRoute() {
-  const params = useLocalSearchParams<{ id?: string | string[]; demoState?: string | string[]; outcome?: string | string[] }>();
+  const params = useLocalSearchParams<{
+    id?: string | string[];
+    demoState?: string | string[];
+    outcome?: string | string[];
+  }>();
   const router = useRouter();
+  const { dispatch, resetSession } = useSession();
+  const [selectedPromptIndex, setSelectedPromptIndex] = useState(0);
+  const sessionStartedRef = useRef(false);
+  const sessionCompletedRef = useRef(false);
+  const scaffoldUsedRef = useRef(false);
   const activityId = firstParam(params.id);
   const requestedState = asDemoState(firstParam(params.demoState));
-  const outcome: Activity1DemoOutcome = firstParam(params.outcome) === 'retry' ? 'retry' : 'success';
-  const demo = useActivity1DemoFlow({ initialState: requestedState ?? 'prompt', outcome });
+  const outcome: Activity1DemoOutcome =
+    firstParam(params.outcome) === 'retry' ? 'retry' : 'success';
+  const prompt = activity01Definition.prompts[selectedPromptIndex];
+  const demoCopy = useMemo(() => toActivity01DemoCopy(prompt), [prompt]);
+
+  const startSession = useCallback(() => {
+    const startedAt = new Date().toISOString();
+    scaffoldUsedRef.current = false;
+    sessionCompletedRef.current = false;
+
+    dispatch({
+      type: 'START_SESSION',
+      sessionId: `activity-1-${Date.now()}`,
+      unitId: activity01SessionSeed.unitId,
+      contentVersion: activity01SessionSeed.contentVersion,
+      startedAt,
+    });
+    dispatch({
+      type: 'SET_ACTIVE_ACTIVITY',
+      activityId: activity01SessionSeed.activityId,
+    });
+    dispatch({
+      type: 'OPEN_PROMPT',
+      activityId: activity01SessionSeed.activityId,
+      promptId: prompt.id,
+      promptText: prompt.koolPrompt,
+      openedAt: startedAt,
+    });
+  }, [dispatch, prompt]);
+
+  const handleResetSession = useCallback(() => {
+    resetSession();
+    startSession();
+  }, [resetSession, startSession]);
+
+  const handleMockOutcome = useCallback(
+    (resolvedOutcome: Activity1DemoOutcome) => {
+      const timestamp = new Date().toISOString();
+      dispatch({
+        type: 'RECORD_ATTEMPT',
+        attempt: createDevelopmentMockAttempt({
+          activityId: activity01SessionSeed.activityId,
+          id: `${prompt.id}-${Date.now()}`,
+          outcome: resolvedOutcome,
+          prompt,
+          scaffoldUsed: scaffoldUsedRef.current,
+          timestamp,
+        }),
+      });
+    },
+    [dispatch, prompt],
+  );
+
+  const demo = useActivity1DemoFlow({
+    initialState: requestedState ?? 'prompt',
+    outcome,
+    copy: demoCopy,
+    onOutcomeResolved: handleMockOutcome,
+  });
+
+  const handleSelectQuestion = useCallback(
+    (questionId: string) => {
+      const nextPromptIndex = activity01Definition.prompts.findIndex(
+        (candidate) => candidate.id === questionId,
+      );
+      if (nextPromptIndex < 0) return;
+
+      const nextPrompt = activity01Definition.prompts[nextPromptIndex];
+      const openedAt = new Date().toISOString();
+      setSelectedPromptIndex(nextPromptIndex);
+      scaffoldUsedRef.current = false;
+      sessionCompletedRef.current = false;
+      dispatch({
+        type: 'OPEN_PROMPT',
+        activityId: activity01SessionSeed.activityId,
+        promptId: nextPrompt.id,
+        promptText: nextPrompt.koolPrompt,
+        openedAt,
+      });
+      demo.selectDevelopmentState('prompt');
+    },
+    [demo, dispatch],
+  );
+
+  const handleHelpPress = useCallback(() => {
+    if (demo.state !== 'tapHelpAvailable') return;
+    scaffoldUsedRef.current = true;
+    dispatch({ type: 'MARK_SCAFFOLD_USED', promptId: prompt.id });
+    demo.onHelpPress();
+  }, [demo, dispatch, prompt.id]);
+
+  useEffect(() => {
+    if (sessionStartedRef.current) return;
+    sessionStartedRef.current = true;
+    startSession();
+  }, [startSession]);
+
+  useEffect(() => {
+    if (demo.state !== 'complete' || sessionCompletedRef.current) return;
+    sessionCompletedRef.current = true;
+    dispatch({
+      type: 'COMPLETE_SESSION',
+      completedAt: new Date().toISOString(),
+    });
+  }, [demo.state, dispatch]);
 
   useEffect(() => {
     void speakKoolPrompt(demo.message);
@@ -65,17 +206,35 @@ export default function ActivityRoute() {
   return (
     <ActivityScreen
       {...activity01DevelopmentFixture}
-      activeHotspotId={demo.isHighlightingHelp ? activity01DevelopmentFixture.hotspots[0].id : undefined}
+      activeHotspotId={
+        demo.isHighlightingHelp
+          ? prompt.hotspotId
+          : undefined
+      }
       completeActionLabel="View demo report"
-      developmentControls={<DevelopmentStatePicker onSelect={demo.selectDevelopmentState} />}
+      developmentControls={
+        <View style={styles.developmentStack}>
+          <DevelopmentStatePicker onSelect={demo.selectDevelopmentState} />
+          <SessionStateInspector
+            activeQuestionId={prompt.id}
+            onResetSession={handleResetSession}
+            onSelectQuestion={handleSelectQuestion}
+            questions={activity01Definition.prompts}
+          />
+        </View>
+      }
       isKoolSpeaking={demo.isSpeaking}
       koolMessage={demo.message}
       mascotState={demo.mascotState}
       microphoneState={demo.microphoneState}
       onCompletePress={() => router.push('/report')}
-      onHotspotPress={demo.onHelpPress}
+      onHotspotPress={handleHelpPress}
       onMicrophonePress={demo.onMicrophonePress}
-      hotspots={demo.isHelpAvailable ? activity01DevelopmentFixture.hotspots : undefined}
+      hotspots={
+        demo.isHelpAvailable
+          ? activity01DevelopmentFixture.hotspots
+          : undefined
+      }
       statusLine={demo.statusLine}
       visualState={demo.visualState}
     />
@@ -112,6 +271,9 @@ const styles = StyleSheet.create({
     gap: Spacing.two,
     padding: Spacing.two,
   },
+  developmentStack: {
+    gap: Spacing.two,
+  },
   developmentTitle: {
     ...Typography.bodySmall,
     color: SemanticColors.secondaryText,
@@ -126,14 +288,14 @@ const styles = StyleSheet.create({
     borderColor: BrandColors.marsala,
     borderRadius: Radii.small,
     borderWidth: 1,
+    justifyContent: 'center',
     minHeight: 40,
     paddingHorizontal: Spacing.two,
-    justifyContent: 'center',
   },
   developmentButtonText: {
+    color: SemanticColors.primaryText,
     fontFamily: Typography.bodyStrong.fontFamily,
     fontSize: 14,
     lineHeight: 18,
-    color: SemanticColors.primaryText,
   },
 });

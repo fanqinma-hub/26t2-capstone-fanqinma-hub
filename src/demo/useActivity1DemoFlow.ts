@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 
 import type { KoolMascotState, MicrophoneButtonState } from '@/components/child-ui';
 import type { ActivityScreenVisualState } from '@/components/activity';
+import { conversationTiming } from '@/config/conversation-timing.config';
 
 export type Activity1DemoState =
   | 'intro'
@@ -20,11 +21,8 @@ export type Activity1DemoState =
 export type Activity1DemoOutcome = 'success' | 'retry';
 
 export const activity1DemoTiming = {
-  gentleCueMs: 3_000,
-  repromptMs: 6_000,
-  tapHelpAvailableMs: 10_000,
+  ...conversationTiming,
   clueReadMs: 1_200,
-  finalListeningMs: 5_000,
   microphoneListeningMs: 1_200,
   processingMs: 1_000,
   successCelebrationMs: 1_800,
@@ -125,9 +123,16 @@ const presentationByState: Record<Activity1DemoState, DemoPresentation> = {
 export type UseActivity1DemoFlowOptions = {
   initialState?: Activity1DemoState;
   outcome?: Activity1DemoOutcome;
+  copy?: Partial<Record<Activity1DemoState, string>>;
+  onOutcomeResolved?: (outcome: Activity1DemoOutcome) => void;
 };
 
-export function useActivity1DemoFlow({ initialState = 'prompt', outcome = 'success' }: UseActivity1DemoFlowOptions = {}) {
+export function useActivity1DemoFlow({
+  initialState = 'prompt',
+  outcome = 'success',
+  copy,
+  onOutcomeResolved,
+}: UseActivity1DemoFlowOptions = {}) {
   const [state, setState] = useState<Activity1DemoState>(initialState);
   const stateRef = useRef(state);
   const timerIds = useRef<ReturnType<typeof setTimeout>[]>([]);
@@ -152,23 +157,24 @@ export function useActivity1DemoFlow({ initialState = 'prompt', outcome = 'succe
     transition('prompt');
     schedule(() => transition('gentleCue'), activity1DemoTiming.gentleCueMs);
     schedule(() => transition('reprompt'), activity1DemoTiming.repromptMs);
-    schedule(() => transition('tapHelpAvailable'), activity1DemoTiming.tapHelpAvailableMs);
+    schedule(() => transition('tapHelpAvailable'), activity1DemoTiming.tapToHelpMs);
   }, [clearTimers, schedule, transition]);
 
   const scheduleInitialPromptTimers = useCallback(() => {
     clearTimers();
     schedule(() => transition('gentleCue'), activity1DemoTiming.gentleCueMs);
     schedule(() => transition('reprompt'), activity1DemoTiming.repromptMs);
-    schedule(() => transition('tapHelpAvailable'), activity1DemoTiming.tapHelpAvailableMs);
+    schedule(() => transition('tapHelpAvailable'), activity1DemoTiming.tapToHelpMs);
   }, [clearTimers, schedule, transition]);
 
   const resolveOutcome = useCallback(() => {
+    onOutcomeResolved?.(outcome);
     const nextState = outcome === 'retry' ? 'retry' : 'success';
     transition(nextState);
     if (nextState === 'success') {
       schedule(() => transition('complete'), activity1DemoTiming.successCelebrationMs);
     }
-  }, [outcome, schedule, transition]);
+  }, [onOutcomeResolved, outcome, schedule, transition]);
 
   const onMicrophonePress = useCallback(() => {
     if (['processing', 'success', 'complete'].includes(stateRef.current)) return;
@@ -209,6 +215,7 @@ export function useActivity1DemoFlow({ initialState = 'prompt', outcome = 'succe
   const presentation = presentationByState[state];
   return {
     ...presentation,
+    message: copy?.[state] ?? presentation.message,
     clearTimers,
     isHelpAvailable: state === 'tapHelpAvailable' || state === 'cluePresented',
     isHighlightingHelp: state === 'cluePresented',
