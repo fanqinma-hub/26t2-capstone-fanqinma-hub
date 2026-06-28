@@ -297,13 +297,16 @@ export function useActivity1DemoFlow({
   );
 
   useEffect(() => {
-    if (initialState === 'prompt') {
-      startPromptFlow();
-    } else {
-      transition(initialState);
-    }
+    const timer = setTimeout(() => {
+      if (initialState === 'prompt') {
+        startPromptFlow();
+      } else {
+        transition(initialState);
+      }
+    }, 0);
 
     return () => {
+      clearTimeout(timer);
       clearTimers();
       stopTimers();
     };
