@@ -1,0 +1,35 @@
+# Dependency directories
+node_modules/
+jspm_packages/
+
+# Expo and Bundler files
+.expo/
+.metro/
+
+# Build and distribution directories
+dist/
+web-build/
+artifacts/
+out/
+
+# Android/iOS native build folders (if any)
+android/
+ios/
+
+# Editor and IDE configurations
+.vscode/
+.idea/
+
+# Debug and log files
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+eslintcache
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Git
+.git
+.gitignore

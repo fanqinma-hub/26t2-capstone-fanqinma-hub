@@ -44,6 +44,22 @@ Parent / Therapist view
 Back Home
 ```
 
+## Run with Docker
+
+1. (Optional) Open `docker-compose.yml` and update your local IP address for the environment variable:
+
+   ```yaml
+   REACT_NATIVE_PACKAGER_HOSTNAME: 192.168.1.103 # Fill in your computer's local IP here
+   ```
+
+   *Note: If this is not set correctly, it will not affect your testing; you can still connect manually-> exp://<YOUR_COMPUTER_LAN_IP>:8081*
+
+2. Start the development server:
+
+   ```bash
+   docker-compose up
+   ```
+
 ## Run Locally
 
 Install dependencies:
