@@ -188,6 +188,7 @@ export function useActivity1DemoFlow({
   initialState = 'prompt',
   copy,
   onOutcomeResolved,
+  outcome = 'success',
 }: UseActivity1DemoFlowOptions = {}) {
   const [state, setState] = useState<Activity1DemoState>(initialState);
   const [lastDialogueAction, setLastDialogueAction] = useState<DialogueAction | null>(null);
@@ -247,11 +248,25 @@ export function useActivity1DemoFlow({
     resumeFlowTimer,
     stopTimers,
     handleTapToHelp,
+    handleChildResponse,
   } = useConversationTimer({
     isActive: false,
     onAction: handleTimerAction,
     onAutoAdvance: handleTimerAutoAdvance,
   });
+
+  const resolveOutcome = useCallback(() => {
+    const nextState = outcome === 'retry' ? 'retry' : 'success';
+    transition(nextState);
+    onOutcomeResolved?.(nextState);
+
+    if (nextState === 'success') {
+      const timer = setTimeout(() => {
+        transition('complete');
+      }, activity1DemoTiming.successCelebrationMs);
+      demoTimerIds.current.push(timer);
+    }
+  }, [outcome, onOutcomeResolved, transition]);
 
   const startPromptFlow = useCallback(() => {
     clearTimers();
@@ -265,11 +280,33 @@ export function useActivity1DemoFlow({
 
     clearTimers();
 
-    // When the child taps to speak, restart the Role 4 silence timer.
-    // This means gentleCue appears after 3s, reprompt after another 6s,
-    // and tap-to-help after another 10s if no valid response is received.
-    restartListeningTimer();
-  }, [clearTimers, restartListeningTimer]);
+    // If we are currently in a listening-capable state, process the child's mock response
+    if (
+      [
+        'listening',
+        'finalListening',
+        'reprompt',
+        'gentleCue',
+        'tapHelpAvailable',
+      ].includes(stateRef.current)
+    ) {
+      handleChildResponse(); // Transitions phase to 'processing'
+      transition('processing');
+      const timer = setTimeout(() => {
+        resolveOutcome();
+      }, activity1DemoTiming.processingMs);
+      demoTimerIds.current.push(timer);
+    } else {
+      // Otherwise, start the silence timer as normal
+      restartListeningTimer();
+    }
+  }, [
+    clearTimers,
+    handleChildResponse,
+    restartListeningTimer,
+    resolveOutcome,
+    transition,
+  ]);
 
   const onHelpPress = useCallback(() => {
     if (stateRef.current !== 'tapHelpAvailable') {
@@ -297,13 +334,16 @@ export function useActivity1DemoFlow({
   );
 
   useEffect(() => {
-    if (initialState === 'prompt') {
-      startPromptFlow();
-    } else {
-      transition(initialState);
-    }
+    const timer = setTimeout(() => {
+      if (initialState === 'prompt') {
+        startPromptFlow();
+      } else {
+        transition(initialState);
+      }
+    }, 0);
 
     return () => {
+      clearTimeout(timer);
       clearTimers();
       stopTimers();
     };

@@ -249,11 +249,17 @@ export function useConversationTimer({
   }, [clearAllTimers, moveToPhase, onAutoAdvance, scheduleFlowTimer]);
 
   useEffect(() => {
+    let timer: ReturnType<typeof setTimeout> | null = null;
     if (isActive) {
-      startPrompt();
+      timer = setTimeout(() => {
+        startPrompt();
+      }, 0);
     }
 
     return () => {
+      if (timer) {
+        clearTimeout(timer);
+      }
       clearAllTimers();
     };
   }, [isActive, startPrompt, clearAllTimers]);

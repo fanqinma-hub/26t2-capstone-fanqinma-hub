@@ -226,13 +226,15 @@ export default function ActivityRoute() {
       onDone: () => {
         if (!isCurrentSpeech) return;
 
-        // Kool has finished speaking, so the silence timer can continue.
+        // Kool has finished speaking, transition to listening phase and resume the silence timer.
+        demo.startListeningAfterKoolSpeech();
         demo.resumeFlowTimer();
       },
       onError: () => {
         if (!isCurrentSpeech) return;
 
-        // If TTS fails, continue the timer so the activity does not get stuck.
+        // If TTS fails, transition to listening phase and resume the silence timer.
+        demo.startListeningAfterKoolSpeech();
         demo.resumeFlowTimer();
       },
     });
