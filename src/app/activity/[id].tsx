@@ -276,7 +276,7 @@ export default function ActivityRoute() {
       koolMessage={demo.message}
       mascotState={demo.mascotState}
       microphoneState={demo.microphoneState}
-      onCompletePress={() => router.push('/report')}
+      onCompletePress={() => router.push('/report?from=activityComplete')}
       onHotspotPress={handleHelpPress}
       onMicrophonePress={demo.onMicrophonePress}
       hotspots={demo.isHelpAvailable ? activity01DevelopmentFixture.hotspots : undefined}
