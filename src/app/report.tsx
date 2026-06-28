@@ -1,17 +1,52 @@
-import { useState } from 'react';
-import { useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useMemo, useState } from 'react';
 import { Image, Pressable, SafeAreaView, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 
+import { ExternalLink } from '@/components/external-link';
 import { brandAssets } from '@/constants/brand-assets';
+import { activity01Definition } from '@/fixtures/activity-01.fixture';
 import { reportDemoFixture } from '@/fixtures/report-demo.fixture';
+import { useSession } from '@/session';
 import { BrandColors, ComponentSizes, Radii, SemanticColors, Spacing, Typography } from '@/theme';
 
 type ReportAudience = 'parent' | 'therapist';
 
+const reportReferenceLinks = [
+  {
+    label: 'How to write an early childhood provider report',
+    url: 'https://www.ndis.gov.au/providers/working-participants/early-childhood-providers/how-write-early-childhood-provider-report',
+  },
+  {
+    label: 'How to write a plan reassessment report',
+    url: 'https://www.ndis.gov.au/providers/working-participants/allied-health-professionals/how-write-plan-reassessment-report',
+  },
+] as const;
+
+function firstParam(value: string | string[] | undefined) {
+  return Array.isArray(value) ? value[0] : value;
+}
+
 export default function ReportScreen() {
+  const params = useLocalSearchParams<{ from?: string | string[] }>();
   const [audience, setAudience] = useState<ReportAudience>('parent');
   const [therapistNote, setTherapistNote] = useState<string>(reportDemoFixture.therapistNote);
   const router = useRouter();
+  const { state: sessionState } = useSession();
+  const cameFromCompletedActivity = firstParam(params.from) === 'activityComplete' && sessionState.status === 'completed';
+  const activityPayload = useMemo(
+    () => ({
+      source: 'activityComplete',
+      capturedAt: new Date().toISOString(),
+      routeParams: params,
+      session: sessionState,
+      activityDefinition: activity01Definition, // BOB: not important, should not use this data
+    }),
+    [params, sessionState],
+  );
+  const activityPayloadJson = useMemo(
+    () => JSON.stringify(activityPayload, null, 2),
+    [activityPayload],
+  );
 
   return (
     <SafeAreaView style={styles.screen}>
@@ -116,6 +151,26 @@ export default function ReportScreen() {
 
           <View style={styles.disclaimer}>
             <Text style={styles.disclaimerText}>{reportDemoFixture.disclaimer}</Text>
+          </View>
+
+          <View style={styles.appendixCard}>
+            <Text style={styles.cardTitle}>{cameFromCompletedActivity ? 'Completed activity data' : 'Report writing resources'}</Text>
+            {cameFromCompletedActivity ? (
+              <ScrollView horizontal style={styles.jsonScroll}>
+                <Text selectable style={styles.jsonText}>{activityPayloadJson}</Text>
+              </ScrollView>
+            ) : (
+              <View style={styles.resourceStack}>
+                {reportReferenceLinks.map((link) => (
+                  <ExternalLink asChild href={link.url} key={link.url}>
+                    <Pressable accessibilityRole="link" style={({ pressed }) => [styles.resourceLink, pressed && styles.resourceLinkPressed]}>
+                      <Text style={styles.resourceLinkText}>{link.label}</Text>
+                      <Text style={styles.resourceUrl}>{link.url}</Text>
+                    </Pressable>
+                  </ExternalLink>
+                ))}
+              </View>
+            )}
           </View>
 
           <Pressable accessibilityRole="button" onPress={() => router.push('/')} style={styles.homeButton}>
@@ -303,6 +358,46 @@ const styles = StyleSheet.create({
     padding: Spacing.two,
   },
   disclaimerText: {
+    ...Typography.bodySmall,
+    color: SemanticColors.secondaryText,
+  },
+  appendixCard: {
+    backgroundColor: SemanticColors.surface,
+    borderColor: BrandColors.pewter,
+    borderRadius: Radii.large,
+    borderWidth: 1,
+    gap: Spacing.two,
+    padding: Spacing.three,
+  },
+  jsonScroll: {
+    backgroundColor: SemanticColors.surfaceMuted,
+    borderRadius: Radii.small,
+  },
+  jsonText: {
+    color: SemanticColors.primaryText,
+    fontFamily: 'monospace',
+    fontSize: 12,
+    lineHeight: 18,
+    padding: Spacing.two,
+  },
+  resourceStack: {
+    gap: Spacing.two,
+  },
+  resourceLink: {
+    borderColor: BrandColors.pewter,
+    borderRadius: Radii.medium,
+    borderWidth: 1,
+    gap: Spacing.half,
+    padding: Spacing.two,
+  },
+  resourceLinkPressed: {
+    opacity: 0.76,
+  },
+  resourceLinkText: {
+    ...Typography.bodyStrong,
+    color: BrandColors.marsala,
+  },
+  resourceUrl: {
     ...Typography.bodySmall,
     color: SemanticColors.secondaryText,
   },

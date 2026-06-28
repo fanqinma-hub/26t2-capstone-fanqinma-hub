@@ -1,10 +1,50 @@
-# Welcome to your Expo app 👋
+﻿# FunWattle Size Words Demo — Team ALMOND
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+This repository contains Team ALMOND's Sprint 1 frontend demo for the FunWattle Size Words learning unit.
 
-## Get started
+## Project Overview
 
-### Option A: Using Docker (No local Node.js required)
+The project is a child-facing speech and language learning prototype for FunWattle.  
+The current MVP focuses on one Size Words learning unit: **Big, Small and Everything in Between!**
+
+The child starts from a simple learning unit card, enters Activity 1, interacts with Kool the Koala, and then reaches a demo report view.
+
+## Sprint 1 Demo Scope
+
+The current Sprint 1 demo includes:
+
+- Home / Size Words unit entry screen
+- Activity 1 visual interaction screen
+- Kool the Koala dialogue and speech bubble/subtitle presentation
+- Scaffold states for child support during the activity
+- Mock child response / SpeechAttempt structure
+- Session state foundation for Activity 1
+- Parent and therapist demo report views
+- Basic app navigation flow between Home, Activity 1, and Demo Report
+
+## Current Demo Flow
+
+```text
+Home
+↓
+Start Activity
+↓
+Activity 1
+↓
+Kool prompt / scaffold states
+↓
+Mock child response
+↓
+Activity complete
+↓
+Demo Report
+↓
+Parent / Therapist view
+↓
+Back Home
+```
+
+## Run with Docker
 
 1. (Optional) Open `docker-compose.yml` and update your local IP address for the environment variable:
 
@@ -20,55 +60,54 @@ This is an [Expo](https://expo.dev) project created with [`create-expo-app`](htt
    docker-compose up
    ```
 
-### Option B: Using Local Node.js
+## Run Locally
 
-1. Install dependencies
-
-   ```bash
-   npm install
-   ```
-
-2. Start the app
-
-   ```bash
-   npx expo start
-   ```
-
-In the output, you'll find options to open the app in a
-
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
-
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
-
-## Get a fresh project
-
-When you're ready, run:
+Install dependencies:
 
 ```bash
-npm run reset-project
+npm install
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+Run lint:
 
-### Other setup steps
+```bash
+npm run lint
+```
 
-- To set up ESLint for linting, run `npx expo lint`, or follow our guide on ["Using ESLint and Prettier"](https://docs.expo.dev/guides/using-eslint/)
-- If you'd like to set up unit testing, follow our guide on ["Unit Testing with Jest"](https://docs.expo.dev/develop/unit-testing/)
-- Learn more about the TypeScript setup in this template in our guide on ["Using TypeScript"](https://docs.expo.dev/guides/typescript/)
+Start the Expo development server:
 
-## Learn more
+```bash
+npx expo start -c
+```
 
-To learn more about developing your project with Expo, look at the following resources:
+Press `w` in the terminal to open the web version.
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+## Current Limitations
 
-## Join the community
+This is a Sprint 1 demo baseline, not the final product.
 
-Join our community of developers creating universal apps.
+Current limitations:
 
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+- Production speech-to-text is not fully implemented yet.
+- Tier scoring is currently prepared as a demo/mock path.
+- Only Activity 1 is available as a demo flow.
+- Reward checkpoints will be completed in later sprints.
+- The final full-unit report will be completed in later sprints.
+- No backend, login, database, or deployment is included in the MVP scope.
+
+## Development Notes
+
+The Sprint 1 goal is to provide a stable frontend baseline that can be extended by each role in later sprints.
+
+The current implementation focuses on:
+
+- Clear child-facing interaction
+- A simple Size Words activity flow
+- Reusable data and session-state structure
+- Early report and reward direction
+- Integration readiness for future STT, scoring, rewards, and full report generation
+
+## Team
+
+Team ALMOND  
+COMP9900 26T2
