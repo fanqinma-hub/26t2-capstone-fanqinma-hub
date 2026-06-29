@@ -39,7 +39,7 @@ export default function ReportScreen() {
       capturedAt: new Date().toISOString(),
       routeParams: params,
       session: sessionState,
-      activityDefinition: activity01Definition, // BOB: not important, should not use this data
+      activityDefinition: activity01Definition,
     }),
     [params, sessionState],
   );
@@ -414,3 +414,4 @@ const styles = StyleSheet.create({
     color: BrandColors.marsala,
   },
 });
+

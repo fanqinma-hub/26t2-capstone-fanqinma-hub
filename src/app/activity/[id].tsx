@@ -243,7 +243,13 @@ export default function ActivityRoute() {
       isCurrentSpeech = false;
       stopKoolSpeech();
     };
-  }, [demo.isSpeaking, demo.message, demo.pauseFlowTimer, demo.resumeFlowTimer]);
+  }, [
+    demo.isSpeaking,
+    demo.message,
+    demo.pauseFlowTimer,
+    demo.resumeFlowTimer,
+    demo.startListeningAfterKoolSpeech,
+  ]);
 
   if (activityId !== '1') {
     return (
@@ -346,3 +352,4 @@ const styles = StyleSheet.create({
     lineHeight: 18,
   },
 });
+

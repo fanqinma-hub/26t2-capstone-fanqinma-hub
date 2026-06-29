@@ -164,7 +164,7 @@ const presentationByState: Record<Activity1DemoState, DemoPresentation> = {
     visualState: 'success',
   },
   retry: {
-    message: 'Nice try. Let’s look together again.',
+    message: 'Nice try. Let鈥檚 look together again.',
     mascotState: 'retry',
     microphoneState: 'error',
     visualState: 'retry',
@@ -215,8 +215,6 @@ export function useActivity1DemoFlow({
         second: '2-digit',
         fractionalSecondDigits: 3,
       });
-
-      console.log('[timer action]', action.type, action.phase, systemTime);
 
       setLastDialogueAction(action);
 
@@ -372,3 +370,4 @@ export function useActivity1DemoFlow({
     state,
   };
 }
+

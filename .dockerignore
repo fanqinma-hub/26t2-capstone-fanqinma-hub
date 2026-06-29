@@ -33,3 +33,9 @@ Thumbs.db
 # Git
 .git
 .gitignore
+# Environment and local assistant files
+.env
+.env.*
+.claude/
+CLAUDE.md
+AGENTS.md
