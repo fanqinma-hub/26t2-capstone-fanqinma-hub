@@ -1,10 +1,11 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
-import { Pressable, SafeAreaView, StyleSheet, Text, View } from 'react-native';
+import { Image, Modal, Pressable, SafeAreaView, StyleSheet, Text, View } from 'react-native';
 
 import { ActivityScreen } from '@/components/activity';
 import { SessionStateInspector } from '@/components/dev';
+import { clientUiAssets } from '@/constants/client-assets';
 import { createDevelopmentMockAttempt } from '@/demo/createDevelopmentMockAttempt';
 import type { Activity1DemoOutcome, Activity1DemoState } from '@/demo/useActivity1DemoFlow';
 import { useActivity1DemoFlow } from '@/demo/useActivity1DemoFlow';
@@ -79,9 +80,11 @@ export default function ActivityRoute() {
   const { dispatch, resetSession } = useSession();
 
   const [selectedPromptIndex, setSelectedPromptIndex] = useState(0);
+  const [showRewardModal, setShowRewardModal] = useState(false);
 
   const sessionStartedRef = useRef(false);
   const sessionCompletedRef = useRef(false);
+  const rewardCheckpointTriggeredRef = useRef(false);
   const scaffoldUsedRef = useRef(false);
 
   const activityId = firstParam(params.id);
@@ -97,6 +100,8 @@ export default function ActivityRoute() {
 
     scaffoldUsedRef.current = false;
     sessionCompletedRef.current = false;
+    rewardCheckpointTriggeredRef.current = false;
+    setShowRewardModal(false);
 
     dispatch({
       type: 'START_SESSION',
@@ -166,6 +171,8 @@ export default function ActivityRoute() {
 
       scaffoldUsedRef.current = false;
       sessionCompletedRef.current = false;
+      rewardCheckpointTriggeredRef.current = false;
+      setShowRewardModal(false);
 
       dispatch({
         type: 'OPEN_PROMPT',
@@ -210,6 +217,20 @@ export default function ActivityRoute() {
       completedAt: new Date().toISOString(),
     });
   }, [demo.state, dispatch]);
+
+  useEffect(() => {
+    const checkpoint = activity01Definition.rewardCheckpoint;
+
+    if (
+      demo.state !== 'success' ||
+      rewardCheckpointTriggeredRef.current
+    ) {
+      return;
+    }
+
+    rewardCheckpointTriggeredRef.current = true;
+    setShowRewardModal(true);
+  }, [demo.state, prompt.id]);
 
   useEffect(() => {
     if (!demo.isSpeaking) {
@@ -265,32 +286,64 @@ export default function ActivityRoute() {
   }
 
   return (
-    <ActivityScreen
-      {...activity01DevelopmentFixture}
-      activeHotspotId={demo.isHighlightingHelp ? prompt.hotspotId : undefined}
-      completeActionLabel="View demo report"
-      developmentControls={
-        <View style={styles.developmentStack}>
-          <DevelopmentStatePicker onSelect={demo.selectDevelopmentState} />
-          <SessionStateInspector
-            activeQuestionId={prompt.id}
-            onResetSession={handleResetSession}
-            onSelectQuestion={handleSelectQuestion}
-            questions={activity01Definition.prompts}
-          />
+    <>
+      <ActivityScreen
+        {...activity01DevelopmentFixture}
+        activeHotspotId={demo.isHighlightingHelp ? prompt.hotspotId : undefined}
+        completeActionLabel="View demo report"
+        developmentControls={
+          <View style={styles.developmentStack}>
+            <DevelopmentStatePicker onSelect={demo.selectDevelopmentState} />
+            <SessionStateInspector
+              activeQuestionId={prompt.id}
+              onResetSession={handleResetSession}
+              onSelectQuestion={handleSelectQuestion}
+              questions={activity01Definition.prompts}
+            />
+          </View>
+        }
+        isKoolSpeaking={demo.isSpeaking}
+        koolMessage={demo.message}
+        mascotState={demo.mascotState}
+        microphoneState={demo.microphoneState}
+        onCompletePress={() => router.push('/report?from=activityComplete')}
+        onHotspotPress={handleHelpPress}
+        onMicrophonePress={demo.onMicrophonePress}
+        hotspots={demo.isHelpAvailable ? activity01DevelopmentFixture.hotspots : undefined}
+        statusLine={demo.statusLine}
+        visualState={demo.visualState}
+      />
+
+      <Modal
+        animationType="fade"
+        onRequestClose={() => setShowRewardModal(false)}
+        transparent
+        visible={showRewardModal}>
+        <View style={styles.rewardOverlay}>
+          <View
+            accessibilityLabel={`Reward unlocked. ${activity01Definition.rewardCheckpoint?.koolMessage}`}
+            accessibilityRole="alert"
+            style={styles.rewardCard}>
+            <Image
+              accessible={false}
+              resizeMode="contain"
+              source={clientUiAssets.successCelebration.source}
+              style={styles.rewardIcon}
+            />
+            <Text style={styles.rewardTitle}>Coin earned!</Text>
+            <Text style={styles.rewardMessage}>
+              {activity01Definition.rewardCheckpoint?.koolMessage}
+            </Text>
+            <Pressable
+              accessibilityRole="button"
+              onPress={() => setShowRewardModal(false)}
+              style={styles.rewardButton}>
+              <Text style={styles.rewardButtonText}>Continue</Text>
+            </Pressable>
+          </View>
         </View>
-      }
-      isKoolSpeaking={demo.isSpeaking}
-      koolMessage={demo.message}
-      mascotState={demo.mascotState}
-      microphoneState={demo.microphoneState}
-      onCompletePress={() => router.push('/report?from=activityComplete')}
-      onHotspotPress={handleHelpPress}
-      onMicrophonePress={demo.onMicrophonePress}
-      hotspots={demo.isHelpAvailable ? activity01DevelopmentFixture.hotspots : undefined}
-      statusLine={demo.statusLine}
-      visualState={demo.visualState}
-    />
+      </Modal>
+    </>
   );
 }
 
@@ -350,6 +403,53 @@ const styles = StyleSheet.create({
     fontFamily: Typography.bodyStrong.fontFamily,
     fontSize: 14,
     lineHeight: 18,
+  },
+  rewardOverlay: {
+    alignItems: 'center',
+    backgroundColor: SemanticColors.overlay,
+    flex: 1,
+    justifyContent: 'center',
+    padding: Spacing.three,
+  },
+  rewardCard: {
+    alignItems: 'center',
+    backgroundColor: SemanticColors.surface,
+    borderColor: BrandColors.tangerine,
+    borderRadius: Radii.large,
+    borderWidth: 3,
+    gap: Spacing.two,
+    maxWidth: 360,
+    padding: Spacing.three,
+    width: '100%',
+  },
+  rewardIcon: {
+    height: 96,
+    width: 96,
+  },
+  rewardTitle: {
+    ...Typography.headingSmall,
+    color: SemanticColors.primaryText,
+    textAlign: 'center',
+  },
+  rewardMessage: {
+    ...Typography.body,
+    color: SemanticColors.secondaryText,
+    textAlign: 'center',
+  },
+  rewardButton: {
+    alignItems: 'center',
+    backgroundColor: BrandColors.tangerine,
+    borderColor: BrandColors.marsala,
+    borderRadius: Radii.pill,
+    borderWidth: 2,
+    justifyContent: 'center',
+    minHeight: 52,
+    paddingHorizontal: Spacing.four,
+    width: '100%',
+  },
+  rewardButtonText: {
+    ...Typography.button,
+    color: SemanticColors.primaryText,
   },
 });
 
