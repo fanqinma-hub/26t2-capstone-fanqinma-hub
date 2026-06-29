@@ -1,15 +1,25 @@
-import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useRouter } from 'expo-router';
 import { useMemo, useState } from 'react';
-import { Image, Pressable, SafeAreaView, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Image, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ExternalLink } from '@/components/external-link';
 import { brandAssets } from '@/constants/brand-assets';
-import { activity01Definition } from '@/fixtures/activity-01.fixture';
 import { reportDemoFixture } from '@/fixtures/report-demo.fixture';
 import { useSession } from '@/session';
-import { BrandColors, ComponentSizes, Radii, SemanticColors, Spacing, Typography } from '@/theme';
+import { BrandColors, ComponentSizes, isTablet, Radii, SemanticColors, Spacing, Typography } from '@/theme';
+import type { SpeechAttempt } from '@/types/session.types';
+import { formatResponseTier } from '@/utils/activity-response';
 
 type ReportAudience = 'parent' | 'therapist';
+
+const tierDisplay = {
+  noun_only: { label: 'No size word detected', tier: 'Tier 1' },
+  adjective_used: { label: 'One size word detected', tier: 'Tier 2' },
+  rich_description: { label: 'Comparative or rich size description', tier: 'Tier 3' },
+} as const satisfies Record<SpeechAttempt['tier'], { label: string; tier: string }>;
+
+const reportContentMaxWidth = isTablet ? 900 : ComponentSizes.contentMaxWidth;
 
 const reportReferenceLinks = [
   {
@@ -22,31 +32,24 @@ const reportReferenceLinks = [
   },
 ] as const;
 
-function firstParam(value: string | string[] | undefined) {
-  return Array.isArray(value) ? value[0] : value;
-}
-
 export default function ReportScreen() {
-  const params = useLocalSearchParams<{ from?: string | string[] }>();
   const [audience, setAudience] = useState<ReportAudience>('parent');
   const [therapistNote, setTherapistNote] = useState<string>(reportDemoFixture.therapistNote);
   const router = useRouter();
   const { state: sessionState } = useSession();
-  const cameFromCompletedActivity = firstParam(params.from) === 'activityComplete' && sessionState.status === 'completed';
-  const activityPayload = useMemo(
-    () => ({
-      source: 'activityComplete',
-      capturedAt: new Date().toISOString(),
-      routeParams: params,
-      session: sessionState,
-      activityDefinition: activity01Definition,
-    }),
-    [params, sessionState],
-  );
-  const activityPayloadJson = useMemo(
-    () => JSON.stringify(activityPayload, null, 2),
-    [activityPayload],
-  );
+  const hasSessionAttempts = sessionState.attempts.length > 0;
+  const currentHelpCount = hasSessionAttempts
+    ? sessionState.promptRecords.filter((record) => record.scaffoldUsed).length
+    : reportDemoFixture.helpCount;
+  const tierSummaryRows = useMemo(() => {
+    if (!hasSessionAttempts) return reportDemoFixture.tierSummary;
+
+    return (['noun_only', 'adjective_used', 'rich_description'] as const).map((tier) => ({
+      count: sessionState.attempts.filter((attempt) => attempt.tier === tier).length,
+      label: tierDisplay[tier].label,
+      tier: tierDisplay[tier].tier,
+    }));
+  }, [hasSessionAttempts, sessionState.attempts]);
 
   return (
     <SafeAreaView style={styles.screen}>
@@ -101,14 +104,14 @@ export default function ReportScreen() {
 
               <View style={styles.card}>
                 <Text style={styles.cardTitle}>How Kool helped</Text>
-                <Text style={styles.cardBody}>Kool gave {reportDemoFixture.helpCount} picture clue to help Sam keep going.</Text>
+                <Text style={styles.cardBody}>Kool gave {currentHelpCount} picture clue to help Sam keep going.</Text>
               </View>
             </View>
           ) : (
             <View style={styles.stack}>
               <View style={styles.card}>
-                <Text style={styles.cardTitle}>Demo tier summary</Text>
-                {reportDemoFixture.tierSummary.map((item) => (
+                <Text style={styles.cardTitle}>{hasSessionAttempts ? 'Current session tier summary' : 'Demo tier summary'}</Text>
+                {tierSummaryRows.map((item) => (
                   <View key={item.tier} style={styles.tierRow}>
                     <View>
                       <Text style={styles.tierName}>{item.tier}</Text>
@@ -124,7 +127,7 @@ export default function ReportScreen() {
                 {reportDemoFixture.sizeWordExamples.map((item) => (
                   <Text key={item.word} style={styles.wordExample}>{item.example}</Text>
                 ))}
-                <Text style={styles.helpCount}>Picture scaffold/help count: {reportDemoFixture.helpCount}</Text>
+                <Text style={styles.helpCount}>Picture scaffold/help count: {currentHelpCount}</Text>
               </View>
 
               <View style={styles.card}>
@@ -140,6 +143,28 @@ export default function ReportScreen() {
             </View>
           )}
 
+          <View style={styles.card}>
+            <Text style={styles.cardTitle}>Current session captures</Text>
+            {hasSessionAttempts ? (
+              <View style={styles.attemptStack}>
+                {sessionState.attempts.map((attempt, index) => (
+                  <View key={attempt.id} style={styles.attemptRow}>
+                    <View style={styles.attemptHeader}>
+                      <Text style={styles.attemptPrompt}>Q{index + 1}. {attempt.promptText}</Text>
+                      <Text style={styles.attemptTier}>{formatResponseTier(attempt.tier)}</Text>
+                    </View>
+                    <Text style={styles.attemptTranscript}>Child said: {attempt.transcript || 'No clear transcript captured'}</Text>
+                    <Text style={styles.attemptMeta}>
+                      Status: {attempt.status} · Source: {attempt.source} · Size words: {attempt.detectedSizeWords.length ? attempt.detectedSizeWords.join(', ') : 'none'}
+                    </Text>
+                  </View>
+                ))}
+              </View>
+            ) : (
+              <Text style={styles.cardBody}>No current session transcript yet. Start Activity 1 to generate live demo data.</Text>
+            )}
+          </View>
+
           <View style={styles.actions}>
             <Pressable accessibilityLabel="Download report. Demo only." accessibilityRole="button" disabled style={styles.actionButton}>
               <Text style={styles.actionButtonText}>Download</Text>
@@ -149,33 +174,28 @@ export default function ReportScreen() {
             </Pressable>
           </View>
 
+          <Pressable accessibilityRole="button" onPress={() => router.push('/')} style={styles.homeButton}>
+            <Text style={styles.homeButtonText}>Back to home</Text>
+          </Pressable>
+
           <View style={styles.disclaimer}>
             <Text style={styles.disclaimerText}>{reportDemoFixture.disclaimer}</Text>
           </View>
 
           <View style={styles.appendixCard}>
-            <Text style={styles.cardTitle}>{cameFromCompletedActivity ? 'Completed activity data' : 'Report writing resources'}</Text>
-            {cameFromCompletedActivity ? (
-              <ScrollView horizontal style={styles.jsonScroll}>
-                <Text selectable style={styles.jsonText}>{activityPayloadJson}</Text>
-              </ScrollView>
-            ) : (
-              <View style={styles.resourceStack}>
-                {reportReferenceLinks.map((link) => (
-                  <ExternalLink asChild href={link.url} key={link.url}>
-                    <Pressable accessibilityRole="link" style={({ pressed }) => [styles.resourceLink, pressed && styles.resourceLinkPressed]}>
-                      <Text style={styles.resourceLinkText}>{link.label}</Text>
-                      <Text style={styles.resourceUrl}>{link.url}</Text>
-                    </Pressable>
-                  </ExternalLink>
-                ))}
-              </View>
-            )}
+            <Text style={styles.cardTitle}>Report writing resources</Text>
+            <View style={styles.resourceStack}>
+              {reportReferenceLinks.map((link) => (
+                <ExternalLink asChild href={link.url} key={link.url}>
+                  <Pressable accessibilityRole="link" style={({ pressed }) => [styles.resourceLink, pressed && styles.resourceLinkPressed]}>
+                    <Text style={styles.resourceLinkText}>{link.label}</Text>
+                    <Text style={styles.resourceUrl}>{link.url}</Text>
+                  </Pressable>
+                </ExternalLink>
+              ))}
+            </View>
           </View>
 
-          <Pressable accessibilityRole="button" onPress={() => router.push('/')} style={styles.homeButton}>
-            <Text style={styles.homeButtonText}>Back to home</Text>
-          </Pressable>
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -195,8 +215,8 @@ const styles = StyleSheet.create({
     padding: Spacing.three,
   },
   content: {
-    gap: Spacing.three,
-    maxWidth: ComponentSizes.contentMaxWidth,
+    gap: Spacing.two,
+    maxWidth: reportContentMaxWidth,
     width: '100%',
   },
   header: {
@@ -216,11 +236,11 @@ const styles = StyleSheet.create({
     gap: Spacing.half,
   },
   title: {
-    ...Typography.heading,
+    ...Typography.headingSmall,
     color: SemanticColors.primaryText,
   },
   subtitle: {
-    ...Typography.body,
+    ...Typography.bodySmall,
     color: SemanticColors.secondaryText,
   },
   sampleDataLabel: {
@@ -261,14 +281,14 @@ const styles = StyleSheet.create({
     borderRadius: Radii.large,
     borderWidth: 1,
     gap: Spacing.two,
-    padding: Spacing.three,
+    padding: Spacing.two,
   },
   cardTitle: {
-    ...Typography.headingSmall,
+    ...Typography.status,
     color: SemanticColors.primaryText,
   },
   cardBody: {
-    ...Typography.body,
+    ...Typography.bodySmall,
     color: SemanticColors.secondaryText,
   },
   encouragement: {
@@ -294,7 +314,7 @@ const styles = StyleSheet.create({
     paddingVertical: Spacing.one,
   },
   wordExample: {
-    ...Typography.body,
+    ...Typography.bodySmall,
     color: SemanticColors.secondaryText,
     flex: 1,
     minWidth: 180,
@@ -318,6 +338,40 @@ const styles = StyleSheet.create({
   tierCount: {
     ...Typography.headingSmall,
     color: BrandColors.marsala,
+  },
+  attemptStack: {
+    gap: Spacing.two,
+  },
+  attemptRow: {
+    backgroundColor: SemanticColors.surfaceWarm,
+    borderColor: BrandColors.pewter,
+    borderRadius: Radii.medium,
+    borderWidth: 1,
+    gap: Spacing.one,
+    padding: Spacing.two,
+  },
+  attemptHeader: {
+    alignItems: 'flex-start',
+    flexDirection: isTablet ? 'row' : 'column',
+    gap: Spacing.one,
+    justifyContent: 'space-between',
+  },
+  attemptPrompt: {
+    ...Typography.bodyStrong,
+    color: SemanticColors.primaryText,
+    flex: 1,
+  },
+  attemptTier: {
+    ...Typography.label,
+    color: BrandColors.marsala,
+  },
+  attemptTranscript: {
+    ...Typography.bodySmall,
+    color: SemanticColors.primaryText,
+  },
+  attemptMeta: {
+    ...Typography.bodySmall,
+    color: SemanticColors.secondaryText,
   },
   helpCount: {
     ...Typography.bodyStrong,
@@ -369,17 +423,6 @@ const styles = StyleSheet.create({
     gap: Spacing.two,
     padding: Spacing.three,
   },
-  jsonScroll: {
-    backgroundColor: SemanticColors.surfaceMuted,
-    borderRadius: Radii.small,
-  },
-  jsonText: {
-    color: SemanticColors.primaryText,
-    fontFamily: 'monospace',
-    fontSize: 12,
-    lineHeight: 18,
-    padding: Spacing.two,
-  },
   resourceStack: {
     gap: Spacing.two,
   },
@@ -414,4 +457,3 @@ const styles = StyleSheet.create({
     color: BrandColors.marsala,
   },
 });
-

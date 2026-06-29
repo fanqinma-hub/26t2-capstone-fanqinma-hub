@@ -1,5 +1,7 @@
 import { Platform } from 'react-native';
 
+import { moderateScale } from './responsive';
+
 export const FontFamilies = {
   bodyRegular: 'Nunito_400Regular',
   bodySemiBold: 'Nunito_600SemiBold',
@@ -8,51 +10,54 @@ export const FontFamilies = {
   headingBold: 'Raleway_700Bold',
 } as const;
 
+// Font sizes are tempered-scaled to the device so copy stays comfortably large
+// for 6–8 year-olds on small phones without inflating on tablets. Consumers
+// keep spreading `...Typography.x`; no per-component font sizing.
 export const Typography = {
   body: {
     fontFamily: FontFamilies.bodyRegular,
-    fontSize: 20,
-    lineHeight: 30,
+    fontSize: moderateScale(20),
+    lineHeight: moderateScale(30),
   },
   bodyStrong: {
     fontFamily: FontFamilies.bodyBold,
-    fontSize: 20,
-    lineHeight: 30,
+    fontSize: moderateScale(20),
+    lineHeight: moderateScale(30),
   },
   bodySmall: {
     fontFamily: FontFamilies.bodyRegular,
-    fontSize: 18,
-    lineHeight: 26,
+    fontSize: moderateScale(18),
+    lineHeight: moderateScale(26),
   },
   label: {
     fontFamily: FontFamilies.bodySemiBold,
-    fontSize: 20,
-    lineHeight: 28,
+    fontSize: moderateScale(20),
+    lineHeight: moderateScale(28),
   },
   heading: {
     fontFamily: FontFamilies.headingBold,
-    fontSize: 36,
-    lineHeight: 44,
+    fontSize: moderateScale(36),
+    lineHeight: moderateScale(44),
   },
   headingSmall: {
     fontFamily: FontFamilies.headingSemiBold,
-    fontSize: 26,
-    lineHeight: 34,
+    fontSize: moderateScale(26),
+    lineHeight: moderateScale(34),
   },
   status: {
     fontFamily: FontFamilies.bodyBold,
-    fontSize: 22,
-    lineHeight: 30,
+    fontSize: moderateScale(22),
+    lineHeight: moderateScale(30),
   },
   speech: {
     fontFamily: FontFamilies.bodySemiBold,
-    fontSize: 24,
-    lineHeight: 34,
+    fontSize: moderateScale(24),
+    lineHeight: moderateScale(34),
   },
   button: {
     fontFamily: FontFamilies.bodyBold,
-    fontSize: 22,
-    lineHeight: 28,
+    fontSize: moderateScale(22),
+    lineHeight: moderateScale(28),
   },
 } as const;
 

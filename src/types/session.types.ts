@@ -1,6 +1,6 @@
-import type { ResponseTier, TargetAdjective } from './activity.types';
+import type { ResponseTier, SizeWordKeyword, TargetAdjective } from './activity.types';
 
-export type TranscriptSource = 'azure' | 'mock';
+export type TranscriptSource = 'azure' | 'manual' | 'mock' | 'native' | 'web';
 
 export type SpeechAttemptStatus =
   | 'captured'
@@ -11,7 +11,7 @@ export type SpeechAttemptStatus =
 
 export type MatchedSizeWord = {
   heard: string;
-  canonical: TargetAdjective;
+  canonical: SizeWordKeyword;
   confidence: number | null;
 };
 
@@ -26,7 +26,7 @@ export type SpeechAttempt = {
   promptText: string;
   transcript: string;
   normalizedTranscript: string;
-  detectedSizeWords: readonly TargetAdjective[];
+  detectedSizeWords: readonly SizeWordKeyword[];
   matchedVariants: readonly MatchedSizeWord[];
   tier: ResponseTier;
   targetAdjectiveUsed: TargetAdjective | null;

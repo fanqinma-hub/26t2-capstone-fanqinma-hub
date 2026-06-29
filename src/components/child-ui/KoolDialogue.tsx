@@ -8,6 +8,7 @@ export type KoolDialogueProps = {
   message: string;
   speakerLabel?: string;
   variant?: KoolDialogueVariant;
+  size?: 'default' | 'compact';
   accessibilityLabel?: string;
 };
 
@@ -21,14 +22,18 @@ export function KoolDialogue({
   message,
   speakerLabel,
   variant = 'default',
+  size = 'default',
   accessibilityLabel,
 }: KoolDialogueProps) {
   const label = speakerLabel ?? variantLabels[variant];
 
   return (
-    <View accessible accessibilityLabel={accessibilityLabel ?? `${label}: ${message}`} style={[styles.container, styles[variant]]}>
-      <Text style={styles.speaker}>{label}</Text>
-      <Text style={styles.message}>{message}</Text>
+    <View
+      accessible
+      accessibilityLabel={accessibilityLabel ?? `${label}: ${message}`}
+      style={[styles.container, styles[variant], size === 'compact' && styles.containerCompact]}>
+      <Text style={[styles.speaker, size === 'compact' && styles.speakerCompact]}>{label}</Text>
+      <Text style={[styles.message, size === 'compact' && styles.messageCompact]}>{message}</Text>
     </View>
   );
 }
@@ -39,6 +44,11 @@ const styles = StyleSheet.create({
     borderWidth: Spacing.half,
     gap: Spacing.one,
     padding: Spacing.three,
+  },
+  containerCompact: {
+    gap: Spacing.half,
+    paddingHorizontal: 12,
+    paddingVertical: Spacing.two,
   },
   default: {
     backgroundColor: SemanticColors.surface,
@@ -56,8 +66,16 @@ const styles = StyleSheet.create({
     ...Typography.label,
     color: SemanticColors.secondaryText,
   },
+  speakerCompact: {
+    fontSize: 17,
+    lineHeight: 22,
+  },
   message: {
     ...Typography.speech,
     color: SemanticColors.primaryText,
+  },
+  messageCompact: {
+    fontSize: 20,
+    lineHeight: 27,
   },
 });

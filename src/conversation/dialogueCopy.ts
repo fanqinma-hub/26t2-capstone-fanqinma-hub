@@ -11,7 +11,7 @@ export const KOOL_SILENCE_COPY = {
   cluePresented: 'This is a watermelon. Can you tell me its size?',
   finalListening: 'One last try. Is it big, small, tiny, huge, or medium?',
   processing: 'Kool is thinking…',
-  autoAdvance: 'Good trying. Let’s keep going.',
+  autoAdvance: 'Good try. Let’s keep going.',
   complete: 'You finished Activity 1. Let’s look at your demo report!',
 } as const;
 

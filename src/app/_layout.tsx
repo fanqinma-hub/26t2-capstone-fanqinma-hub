@@ -13,6 +13,7 @@ import { Slot } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { useEffect } from 'react';
 import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { SessionProvider } from '@/session';
 import { SemanticColors, Spacing, Typography } from '@/theme';
@@ -54,9 +55,11 @@ export default function RootLayout() {
   }
 
   return (
-    <SessionProvider>
-      <Slot />
-    </SessionProvider>
+    <SafeAreaProvider>
+      <SessionProvider>
+        <Slot />
+      </SessionProvider>
+    </SafeAreaProvider>
   );
 }
 

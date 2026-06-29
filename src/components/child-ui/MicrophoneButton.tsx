@@ -1,4 +1,5 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
+import Animated, { useAnimatedStyle, type SharedValue } from 'react-native-reanimated';
 import { SymbolView } from 'expo-symbols';
 
 import { BrandColors, ComponentSizes, Radii, SemanticColors, Spacing, Typography } from '@/theme';
@@ -8,8 +9,13 @@ export type MicrophoneButtonState = 'idle' | 'listening' | 'processing' | 'disab
 export type MicrophoneButtonProps = {
   state?: MicrophoneButtonState;
   onPress?: () => void;
+  onPressIn?: () => void;
+  onPressOut?: () => void;
   accessibilityLabel?: string;
   layout?: 'default' | 'primary';
+  showLabel?: boolean;
+  /** 0..1 live mic level; drives the "I can hear you" waveform while holding. */
+  audioLevel?: SharedValue<number>;
 };
 
 const stateContent: Record<
@@ -17,14 +23,14 @@ const stateContent: Record<
   { label: string; helperText: string; accessibilityHint: string }
 > = {
   idle: {
-    label: 'Tap to speak',
-    helperText: 'Your microphone is ready.',
-    accessibilityHint: 'Double tap to begin speaking.',
+    label: 'Hold to talk',
+    helperText: 'Hold the button and tell Kool.',
+    accessibilityHint: 'Press and hold to speak, then let go when you are done.',
   },
   listening: {
-    label: 'Listening',
-    helperText: 'Speak when you are ready.',
-    accessibilityHint: 'The app is listening.',
+    label: 'Listening…',
+    helperText: 'Keep talking, then let go.',
+    accessibilityHint: 'The app is listening while you hold the button.',
   },
   processing: {
     label: 'Thinking…',
@@ -32,9 +38,9 @@ const stateContent: Record<
     accessibilityHint: 'The app is processing your response.',
   },
   disabled: {
-    label: 'Microphone unavailable',
-    helperText: 'This button cannot be used right now.',
-    accessibilityHint: 'The microphone button is disabled.',
+    label: 'Listen to Kool',
+    helperText: 'Kool is talking now.',
+    accessibilityHint: 'Please wait while Kool is speaking.',
   },
   error: {
     label: 'Try again',
@@ -53,10 +59,28 @@ function MicrophoneGlyph({ color }: { color: string }) {
   );
 }
 
-export function MicrophoneButton({ state = 'idle', onPress, accessibilityLabel, layout = 'default' }: MicrophoneButtonProps) {
+export function MicrophoneButton({
+  state = 'idle',
+  onPress,
+  onPressIn,
+  onPressOut,
+  accessibilityLabel,
+  layout = 'default',
+  showLabel = true,
+  audioLevel,
+}: MicrophoneButtonProps) {
   const content = stateContent[state];
   const isDisabled = state === 'disabled' || state === 'processing';
   const iconColor = state === 'listening' ? BrandColors.marsala : SemanticColors.primaryText;
+
+  // Expands and brightens with the live mic level while the child holds and talks.
+  const waveStyle = useAnimatedStyle(() => {
+    const level = audioLevel?.value ?? 0;
+    return {
+      opacity: 0.16 + level * 0.5,
+      transform: [{ scale: 1 + level * 0.42 }],
+    };
+  });
 
   return (
     <Pressable
@@ -66,19 +90,32 @@ export function MicrophoneButton({ state = 'idle', onPress, accessibilityLabel, 
       accessibilityState={{ busy: state === 'processing', disabled: isDisabled }}
       disabled={isDisabled}
       onPress={onPress}
-      style={({ pressed }) => [styles.button, styles[state], layout === 'primary' && styles.primaryButton, pressed && !isDisabled && styles.pressed]}>
-      <View style={[styles.iconCircle, layout === 'primary' && styles.primaryIconCircle, state === 'listening' && styles.listeningIconCircle]}>
-        <SymbolView
-          fallback={<MicrophoneGlyph color={iconColor} />}
-          name={{ android: 'mic', ios: 'mic.fill', web: 'mic' }}
-          size={48}
-          tintColor={iconColor}
-        />
+      onPressIn={onPressIn}
+      onPressOut={onPressOut}
+      style={({ pressed }) => [
+        styles.button,
+        styles[state],
+        layout === 'primary' && styles.primaryButton,
+        layout === 'primary' && !showLabel && styles.primaryIconOnly,
+        pressed && !isDisabled && styles.pressed,
+      ]}>
+      <View style={styles.iconWrap}>
+        {state === 'listening' ? <Animated.View pointerEvents="none" style={[styles.wave, waveStyle]} /> : null}
+        <View style={[styles.iconCircle, layout === 'primary' && styles.primaryIconCircle, state === 'listening' && styles.listeningIconCircle]}>
+          <SymbolView
+            fallback={<MicrophoneGlyph color={iconColor} />}
+            name={{ android: 'mic', ios: 'mic.fill', web: 'mic' }}
+            size={48}
+            tintColor={iconColor}
+          />
+        </View>
       </View>
-      <View style={[styles.copy, layout === 'primary' && styles.primaryCopy]}>
-        <Text style={[styles.label, layout === 'primary' && styles.primaryLabel]}>{content.label}</Text>
-        {layout === 'default' ? <Text style={styles.helperText}>{content.helperText}</Text> : null}
-      </View>
+      {showLabel ? (
+        <View style={[styles.copy, layout === 'primary' && styles.primaryCopy]}>
+          <Text style={[styles.label, layout === 'primary' && styles.primaryLabel]}>{content.label}</Text>
+          {layout === 'default' ? <Text style={styles.helperText}>{content.helperText}</Text> : null}
+        </View>
+      ) : null}
     </Pressable>
   );
 }
@@ -122,9 +159,24 @@ const styles = StyleSheet.create({
     borderWidth: 0,
     flexDirection: 'column',
     gap: Spacing.one,
-    minHeight: 136,
-    minWidth: 144,
+    minHeight: ComponentSizes.microphoneButton + Spacing.five,
+    minWidth: ComponentSizes.microphoneButton + Spacing.five,
     padding: 0,
+  },
+  primaryIconOnly: {
+    minHeight: ComponentSizes.microphoneButton,
+    minWidth: ComponentSizes.microphoneButton,
+  },
+  iconWrap: {
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  wave: {
+    backgroundColor: BrandColors.mimosa,
+    borderRadius: Radii.pill,
+    height: ComponentSizes.microphoneButton,
+    position: 'absolute',
+    width: ComponentSizes.microphoneButton,
   },
   iconCircle: {
     alignItems: 'center',
@@ -138,8 +190,8 @@ const styles = StyleSheet.create({
     backgroundColor: BrandColors.tangerine,
     borderColor: BrandColors.marsala,
     borderWidth: Spacing.half,
-    height: 104,
-    width: 104,
+    height: ComponentSizes.microphoneButton,
+    width: ComponentSizes.microphoneButton,
   },
   listeningIconCircle: {
     borderColor: BrandColors.marsala,

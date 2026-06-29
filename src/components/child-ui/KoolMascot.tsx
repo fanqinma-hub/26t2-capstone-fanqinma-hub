@@ -3,6 +3,7 @@ import { Image, StyleSheet } from 'react-native';
 import Animated, { cancelAnimation, useAnimatedStyle, useReducedMotion, useSharedValue, withRepeat, withSequence, withTiming } from 'react-native-reanimated';
 
 import { brandAssets } from '@/constants/brand-assets';
+import { scale } from '@/theme';
 
 export type KoolMascotState = 'idle' | 'wave' | 'speaking' | 'listening' | 'thinking' | 'retry' | 'success' | 'breathe';
 
@@ -15,9 +16,9 @@ export type KoolMascotProps = {
 };
 
 const mascotSizes = {
-  small: { height: 174, width: 120 },
-  medium: { height: 236, width: 168 },
-  large: { height: 340, width: 270 },
+  small: { height: scale(174), width: scale(120) },
+  medium: { height: scale(236), width: scale(168) },
+  large: { height: scale(340), width: scale(270) },
 } as const;
 
 const stateLabels: Record<KoolMascotState, string> = {

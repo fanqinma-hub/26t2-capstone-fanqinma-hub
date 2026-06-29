@@ -98,14 +98,14 @@ const presentationByState: Record<Activity1DemoState, DemoPresentation> = {
   intro: {
     message: KOOL_SILENCE_COPY.intro,
     mascotState: 'wave',
-    microphoneState: 'idle',
+    microphoneState: 'disabled',
     visualState: 'prompt',
     isSpeaking: true,
   },
   prompt: {
     message: KOOL_SILENCE_COPY.prompt,
     mascotState: 'speaking',
-    microphoneState: 'idle',
+    microphoneState: 'disabled',
     visualState: 'prompt',
     isSpeaking: true,
   },
@@ -118,37 +118,37 @@ const presentationByState: Record<Activity1DemoState, DemoPresentation> = {
   },
   gentleCue: {
     message: KOOL_SILENCE_COPY.gentleCue,
-    mascotState: 'speaking',
-    microphoneState: 'idle',
+    mascotState: 'breathe',
+    microphoneState: 'listening',
+    statusLine: 'Take your time',
     visualState: 'gentleCue',
-    isSpeaking: true,
   },
   reprompt: {
     message: KOOL_SILENCE_COPY.reprompt,
     mascotState: 'speaking',
-    microphoneState: 'idle',
+    microphoneState: 'disabled',
     visualState: 'reprompt',
     isSpeaking: true,
   },
   tapHelpAvailable: {
     message: KOOL_SILENCE_COPY.tapHelpAvailable,
     mascotState: 'idle',
-    microphoneState: 'idle',
+    microphoneState: 'listening',
     visualState: 'tapHelpAvailable',
   },
   cluePresented: {
     message: KOOL_SILENCE_COPY.cluePresented,
     mascotState: 'speaking',
-    microphoneState: 'idle',
+    microphoneState: 'disabled',
     visualState: 'cluePresented',
     isSpeaking: true,
   },
   finalListening: {
     message: KOOL_SILENCE_COPY.finalListening,
-    mascotState: 'speaking',
-    microphoneState: 'idle',
+    mascotState: 'listening',
+    microphoneState: 'listening',
+    statusLine: 'Listening',
     visualState: 'finalListening',
-    isSpeaking: true,
   },
   processing: {
     message: KOOL_SILENCE_COPY.processing,
@@ -162,12 +162,14 @@ const presentationByState: Record<Activity1DemoState, DemoPresentation> = {
     mascotState: 'success',
     microphoneState: 'disabled',
     visualState: 'success',
+    isSpeaking: true,
   },
   retry: {
-    message: 'Nice try. Let鈥檚 look together again.',
+    message: "Good try! Let's look together and try once more.",
     mascotState: 'retry',
-    microphoneState: 'error',
+    microphoneState: 'disabled',
     visualState: 'retry',
+    isSpeaking: true,
   },
   complete: {
     message: KOOL_SILENCE_COPY.complete,
@@ -181,12 +183,14 @@ export type UseActivity1DemoFlowOptions = {
   initialState?: Activity1DemoState;
   outcome?: Activity1DemoOutcome;
   copy?: Partial<Record<Activity1DemoState, string>>;
+  onAutoAdvance?: () => void;
   onOutcomeResolved?: (outcome: Activity1DemoOutcome) => void;
 };
 
 export function useActivity1DemoFlow({
   initialState = 'prompt',
   copy,
+  onAutoAdvance,
   onOutcomeResolved,
   outcome = 'success',
 }: UseActivity1DemoFlowOptions = {}) {
@@ -208,14 +212,6 @@ export function useActivity1DemoFlow({
 
   const handleTimerAction = useCallback(
     (action: DialogueAction) => {
-      const systemTime = new Date(action.timestamp).toLocaleTimeString(undefined, {
-        hour12: false,
-        hour: '2-digit',
-        minute: '2-digit',
-        second: '2-digit',
-        fractionalSecondDigits: 3,
-      });
-
       setLastDialogueAction(action);
 
       // STOP_TIMERS is only for lifecycle/debug logging.
@@ -230,11 +226,9 @@ export function useActivity1DemoFlow({
   );
 
   const handleTimerAutoAdvance = useCallback(() => {
-    // Sprint 1 fallback:
-    // Later this should move to the next prompt/activity.
-    onOutcomeResolved?.('retry');
-    transition('retry');
-  }, [onOutcomeResolved, transition]);
+    transition('processing');
+    onAutoAdvance?.();
+  }, [onAutoAdvance, transition]);
 
   const {
     phase: conversationPhase,
@@ -370,4 +364,3 @@ export function useActivity1DemoFlow({
     state,
   };
 }
-

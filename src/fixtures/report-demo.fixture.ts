@@ -1,6 +1,6 @@
 export const reportDemoFixture = {
   childName: 'Sam',
-  reportLabel: 'Demo session report',
+  reportLabel: 'Session report',
   sessionLabel: 'Size Words — Activity 1 of 5',
   sampleDataLabel: 'Activity 1 sample data',
   parentSummary: 'Sam explored a kitchen picture and practised describing things with size words.',

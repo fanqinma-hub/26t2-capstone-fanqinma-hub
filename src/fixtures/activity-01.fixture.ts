@@ -30,7 +30,7 @@ export const activity01Definition = {
   targetAdjectives: ['big', 'tiny', 'small', 'huge'],
   teachingTechnique: 'Maximal contrast pair: big versus tiny',
   introMessage:
-    'Wow, look at this kitchen! Something is a little bit silly here. Tell me what you see.',
+    'Wow, look at this kitchen! Something is a little bit… silly here! Can you see what I mean? Tell me what you see!',
   exchanges: [
     {
       id: 'activity-1-exchange-fruit',
@@ -59,7 +59,7 @@ export const activity01Definition = {
     {
       id: 'activity-1-watermelon',
       sequence: 1,
-      koolPrompt: "What's that big green thing on the left?",
+      koolPrompt: 'What’s that big green thing on the left?',
       expectedNouns: ['watermelon'],
       targetAdjectives: ['big', 'huge', 'gigantic'],
       acceptedResponses: {
@@ -75,7 +75,7 @@ export const activity01Definition = {
       id: 'activity-1-strawberry',
       sequence: 2,
       koolPrompt:
-        'And right next to it, look at that tiny red one. What is it?',
+        'And right next to it — look at that tiny red one. What is it?',
       expectedNouns: ['strawberry'],
       targetAdjectives: ['tiny', 'small'],
       acceptedResponses: {
@@ -91,7 +91,7 @@ export const activity01Definition = {
     {
       id: 'activity-1-size-contrast',
       sequence: 3,
-      koolPrompt: 'Which one is bigger, the watermelon or the strawberry?',
+      koolPrompt: 'Which one is bigger — the watermelon or the strawberry?',
       expectedNouns: ['watermelon', 'strawberry'],
       targetAdjectives: ['big', 'huge', 'tiny', 'small'],
       acceptedResponses: {
@@ -103,7 +103,7 @@ export const activity01Definition = {
         ],
       },
       recastText:
-        'Yes! The watermelon is BIG and the strawberry is tiny.',
+        'Yes! The watermelon is BIG and the strawberry is tiny. What a funny kitchen!',
       helpPrompt: 'Point to the one that takes up the most space.',
       hotspotId: 'watermelon',
     },
@@ -111,7 +111,7 @@ export const activity01Definition = {
       id: 'activity-1-pot',
       sequence: 4,
       koolPrompt:
-        "And over here, there's something you cook with. What is it?",
+        'And over here — there’s something you cook with. What do you think that is?',
       expectedNouns: ['pot', 'cooking pot'],
       targetAdjectives: ['big', 'huge'],
       acceptedResponses: {
@@ -126,7 +126,7 @@ export const activity01Definition = {
     {
       id: 'activity-1-teacup',
       sequence: 5,
-      koolPrompt: "And right next to it, what's that tiny little thing?",
+      koolPrompt: 'And right next to it — what’s that tiny little thing?',
       expectedNouns: ['cup', 'teacup'],
       targetAdjectives: ['tiny', 'small'],
       acceptedResponses: {
@@ -134,7 +134,7 @@ export const activity01Definition = {
         target: ['a tiny teacup'],
         bonus: ['a tiny little teacup', "it's so small"],
       },
-      recastText: 'A tiny teacup! It is so small beside the big pot!',
+      recastText: 'A tiny teacup! Imagine trying to make soup in a teacup — it’d be SO tiny! Ha!',
       helpPrompt: 'Look beside the cooking pot for a very small cup.',
       hotspotId: 'teacup',
     },
@@ -142,7 +142,7 @@ export const activity01Definition = {
       id: 'activity-1-wrap-up',
       sequence: 6,
       koolPrompt:
-        'You noticed so many sizes! What was the biggest thing you saw?',
+        'You noticed so many sizes! What was the biggest thing you saw on that bench?',
       expectedNouns: ['watermelon'],
       targetAdjectives: ['big', 'huge'],
       acceptedResponses: {
@@ -150,6 +150,7 @@ export const activity01Definition = {
         target: ['the big watermelon'],
         bonus: ['the huge green watermelon'],
       },
+      acceptsAnyResponse: true,
       recastText:
         'Yes! This kitchen has BIG things and tiny things everywhere!',
       helpPrompt: 'Think about the object that filled most of the left side.',
@@ -202,7 +203,7 @@ export const activity01Definition = {
     id: 'coin-checkpoint-1',
     kind: 'coin',
     afterPromptId: 'activity-1-wrap-up',
-    koolMessage: "You're such a great noticer. Here's your coin!",
+    koolMessage: 'You’re such a great noticer. Here’s your coin!',
   },
   clinicalNote:
     'Kool does not mark a noun-only response as wrong. Kool recasts it with a size adjective.',

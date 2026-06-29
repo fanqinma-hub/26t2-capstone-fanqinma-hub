@@ -1,9 +1,12 @@
 import { Platform } from 'react-native';
 
+import { clamp, scale } from './responsive';
+
 export const ComponentSizes = {
-  minimumTouchTarget: 56,
-  microphoneButton: 104,
-  progressBarHeight: 12,
+  // Never let the touch target fall below the 44pt accessibility floor.
+  minimumTouchTarget: clamp(scale(56), 44, 72),
+  microphoneButton: scale(104),
+  progressBarHeight: scale(12),
   contentMaxWidth: 800,
 } as const;
 

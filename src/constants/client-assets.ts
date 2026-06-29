@@ -18,6 +18,10 @@ export const clientScenes = {
 export const clientUiAssets = {
   thinking: clientAsset(require('../../assets/client/icons/icon-56.png'), 'Thinking'),
   successCelebration: clientAsset(require('../../assets/client/icons/icon-60.png'), 'Birthday celebration'),
+  describingPictures: clientAsset(
+    require('../../assets/client/icons/icon-107.png'),
+    'Describing Pictures, ages 6 to 8',
+  ),
 } as const satisfies Record<string, ClientAsset>;
 
 export type ClientSceneKey = keyof typeof clientScenes;
