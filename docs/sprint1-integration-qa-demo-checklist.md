@@ -13,8 +13,8 @@
 
 ## QA
 - Basic smoke test can open the app.
-- Placeholder activity flow can be reached.
-- Error states and fallback paths are listed.
+- Activity 1 voice flow can be reached and completed (press-and-hold to speak in Chrome web; tier result and reward shown).
+- Error states and fallback paths are listed (browser mic unavailable, no speech heard, silence auto-advance, dev-only typed fallback).
 
 ## Demo
 - Jira board is updated.

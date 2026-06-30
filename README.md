@@ -14,11 +14,12 @@ The child starts from a simple learning unit card, enters Activity 1, interacts 
 The current Sprint 1 demo includes:
 
 - Home / Size Words unit entry screen
-- Activity 1 visual interaction screen
+- Activity 1 visual interaction screen with its multi-prompt kitchen-scene conversation
 - Kool the Koala dialogue and speech bubble/subtitle presentation
-- Scaffold states for child support during the activity
-- Mock child response / SpeechAttempt structure
-- Session state foundation for Activity 1
+- Silence scaffold states (3 / 6 / 10s gentle cue, reprompt, tap-to-help) for child support during the activity
+- Press-and-hold voice answer via the browser Web Speech API (Chrome), with deterministic Tier 1/2/3 scoring on the transcript
+- `SpeechAttempt` (transcript, detected size words, tier) written into the in-memory session
+- Coin reward popup at the activity checkpoint
 - Parent and therapist demo report views
 - Basic app navigation flow between Home, Activity 1, and Demo Report
 
@@ -33,9 +34,9 @@ Activity 1
 ↓
 Kool prompt / scaffold states
 ↓
-Mock child response
+Press-and-hold voice answer (Web Speech STT → Tier 1/2/3)
 ↓
-Activity complete
+Coin reward → Activity complete
 ↓
 Demo Report
 ↓
@@ -82,17 +83,19 @@ npx expo start -c
 
 Press `w` in the terminal to open the web version.
 
+For the voice demo, use **Chrome on the web**: press and hold the microphone to talk, then release. The browser will ask for microphone permission on first use. The Web Speech API is web-only, so the spoken-answer path is not available in the native (Expo Go) build.
+
 ## Current Limitations
 
 This is a Sprint 1 demo baseline, not the final product.
 
 Current limitations:
 
-- Production speech-to-text is not fully implemented yet.
-- Tier scoring is currently prepared as a demo/mock path.
+- The voice demo uses the browser Web Speech API and is best run in **Chrome on the web** (`w`). It is demo-grade, not production-grade or cross-browser/native hardened. The repo also ships `ISTTAdapter` mock/Azure adapters as the future/native path.
+- Tier scoring runs deterministically on the captured transcript for Activity 1; thresholds and edge cases are still being tuned.
 - Only Activity 1 is available as a demo flow.
-- Reward checkpoints will be completed in later sprints.
-- The final full-unit report will be completed in later sprints.
+- The polished parent/therapist report cards still use sample fixtures; the report surfaces the real captured session payload alongside them. Dynamic full-unit report generation comes in a later sprint.
+- Session state is in-memory only; no persistence.
 - No backend, login, database, or deployment is included in the MVP scope.
 
 ## Development Notes

@@ -38,8 +38,11 @@ control the Role 2 UI.
 
 ## Sprint 1 demo adapter
 
-For the Sprint 1 review route, `src/demo/useActivity1DemoFlow.ts` supplies the
-same visual inputs through a deterministic timer and microphone-result demo.
-It remains outside `ActivityScreen` so Roles 4 and 5 can replace timer events,
-recording/STT and retry outcomes without redesigning the activity UI. See
+For the Sprint 1 review route, `src/demo/useActivity1DemoFlow.ts` maps
+conversation timing to the visual inputs, while the activity route captures a
+real spoken answer through `src/services/sprint1SpeechRecognition.ts` (browser
+Web Speech API) and scores it via `src/utils/activity-response.ts`
+(`buildActivitySpeechAttempt` → `classifyTier`). This stays outside
+`ActivityScreen` so Roles 4 and 5 can replace timer events, the STT capture
+source and retry outcomes without redesigning the activity UI. See
 `docs/sprint1-demo-adapters.md` for the full handover boundary.
