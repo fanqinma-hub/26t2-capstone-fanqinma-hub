@@ -1,5 +1,3 @@
-import type { DialoguePhase } from './dialogue.types';
-
 /**
  * SpeechAttempt
  * Represents a single speech recording and scoring attempt by the child.

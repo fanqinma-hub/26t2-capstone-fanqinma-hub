@@ -2,7 +2,6 @@ import {
   extractSizeWords,
   classifyTier,
   getSimilarity,
-  CORE_ADJECTIVES,
 } from '../tier-classifier';
 
 describe('Tier Classifier & Fuzzy Matching Algorithm', () => {
