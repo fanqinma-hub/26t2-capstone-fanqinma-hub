@@ -1,0 +1,293 @@
+# Team ALMOND — Sprint 2 Role Workplan
+
+> Unit: **Big, Small and Everything in Between!**
+> Scope: Size Words only
+> Status: requirements confirmed on 2026-07-17
+
+Implementation boundaries are defined in
+`docs/sprint2-shared-contracts.md`; both files must be followed together.
+
+## 1. Sprint outcome
+
+Deliver a frontend-only, Dockerised five-activity Size Words learning unit that:
+
+- runs its real demo from `docker compose up` in same-machine Chrome via
+  `localhost`;
+- uses Azure Speech for speech-to-text and Kool's text-to-speech;
+- classifies Size Words with deterministic transcript rules;
+- awards exactly three engagement coins;
+- persists the local unit session with AsyncStorage;
+- generates parent and therapist reports from that session; and
+- supports frontend PDF download and share without a backend or LLM.
+
+The target unit duration is 5–10 minutes for children aged 6–8. It assesses
+expressive Size Word vocabulary in connected speech, not articulation or phoneme
+accuracy.
+
+## 2. Source of truth and fixed decisions
+
+When sources conflict, use this order:
+
+1. latest client email and confirmed fourth-meeting decisions;
+2. the updated `Team ALMOND TASKS.xlsx` Size Words requirements;
+3. third-meeting notes where they do not conflict with later information;
+4. Sprint 1 flow and role documents;
+5. current code only as the implementation baseline.
+
+The following decisions are closed for Sprint 2:
+
+- Only the Size Words feature package is in scope.
+- There is no backend, database, Supabase connection, authentication, account,
+  child profile, chat, or complete therapist dashboard.
+- The whole Size Words unit is deterministic and uses no LLM, including its
+  conversation, scoring, rewards, summaries, and reports.
+- Azure Speech is the only real-demo STT and TTS provider.
+- Pronunciation Assessment is not called for this unit and does not appear in
+  Tier logic or reports.
+- The real acceptance platform is Docker + Chrome Web. Expo Go remains a UI
+  compatibility path and may use mocks; it is not the real Azure/PDF acceptance
+  platform.
+- Coins are granted only after Activities 1, 3, and 5. Tier 3 may strengthen the
+  celebration but never grants another coin.
+- Activity 4's visible `BIG/MEDIUM/SMALL` labels will be removed. Activity 3/4
+  retain their supplied 5:4 assets and the UI also supports 3:2 scenes.
+- Mascot poses remain raster assets. Role 2 normalises their canvases and uses
+  Reanimated crossfades/micro-motion. Lottie is optional only for effects such as
+  coin, mic ripple, sparkle, confetti, and loading.
+- The demo Azure key and region are committed to the private repository for the
+  team. Before handoff, the team deletes or invalidates that key in Azure and
+  records the completed check.
+
+## 3. Required stack and current gap
+
+The client stack is non-negotiable:
+
+| Area | Sprint 2 target |
+| --- | --- |
+| Runtime | React Native `0.81.5`, Expo `^54.0.21`, Node.js `20.19.x` |
+| Language/routing | TypeScript `~5.9.2`, Expo Router `~6.0.13` |
+| UI/state | React Native Paper `^5.14.5`, React Context API |
+| Audio/storage | Expo AV `^16.0.7`, AsyncStorage `2.2.0` |
+| Speech | Azure Speech SDK, current compatible release |
+| Delivery | Docker, Docker Compose, Expo Go, GitHub Actions |
+
+The repository currently uses Expo 56 / RN 0.85 / TypeScript 6 / Router 56, has
+no Paper, AsyncStorage, or connected Azure SDK, and contains only an unverified
+development Docker shell. Role 1 owns alignment to the table above. Do not move
+to Node 22 or `expo-audio`. Supabase JS is excluded because Team ALMOND does not
+build a Supabase connection. Docker pins an exact Node 20.19 patch release because
+Expo SDK 54 requires Node 20.19.x or later within the agreed Node 20 line.
+
+## 4. Parallel delivery model
+
+All six roles begin in parallel. Nobody waits for a finished downstream feature:
+
+- Role 1 immediately aligns the stack and Docker environment.
+- Role 2 immediately imports Activities 3–5 and builds UI contracts with fixtures.
+- Roles 3–6 immediately build against shared TypeScript contracts and mocks.
+- Contract changes are announced early and kept backward-compatible where
+  possible; short-lived adapters are preferred over blocking another role.
+- Role 1 owns final integration, regression fixes, demo assembly, and handoff.
+- Role 2 is an early feature owner, not the final cleanup owner.
+
+The team-approved definitions in `docs/sprint2-shared-contracts.md` are the
+canonical boundary. Each domain owner implements its section; Role 1 coordinates
+locations and merges but cannot change another role's semantics alone. This is a
+coordination point, not a sequential phase gate.
+
+## 5. Shared implementation contracts
+
+### Activity registry
+
+One Size Words registry drives the generic activity route. Each activity defines
+its id, order, title, scene asset key, prompts, target words, focus target ids,
+clue/recast copy, accepted noun aliases, and optional reward checkpoint. Role 2's
+asset manifest owns scene source, aspect ratio, accessibility description, and
+hotspot geometry. Do not create copied Activity 2–5 screens.
+
+| Activity | Scene | Primary Size Words | Coin after completion |
+| --- | --- | --- | --- |
+| 1 | Kitchen Bench | big, tiny | Yes |
+| 2 | Park | huge, small | No |
+| 3 | Toy Box | gigantic, tiny | Yes |
+| 4 | Farmer's Market | medium, big, small | No |
+| 5 | Beach Day | all six primary words | Yes |
+
+The six primary report words are `big`, `small`, `tiny`, `huge`, `gigantic`, and
+`medium`. Recognition may also accept `little`, `large`, `giant`, `enormous`, and
+`teeny`, plus natural comparative/superlative forms.
+
+All session events, speech/controller adapters, reward order, metrics, report
+fields, formulas, and value export names are defined only in
+`docs/sprint2-shared-contracts.md`. Roles must not recreate them locally.
+
+## 6. Role workstreams
+
+### Role 1 — Yufan: Platform, integration, and release
+
+Start now:
+
+- align Expo/RN/TypeScript/Router/Paper/Expo AV/AsyncStorage to the required stack;
+- pin an exact Node 20.19.x Docker base, replace floating global Expo installs,
+  and use the project-local CLI with `npm ci`;
+- make `docker compose up` serve the Chrome demo on same-machine `localhost`
+  without a personal LAN IP; and
+- scaffold and merge the approved canonical contract exports so every role can
+  develop with mocks, without redefining their semantics.
+
+Own:
+
+- generic unit/activity routes and feature-package boundary;
+- committed demo Azure environment values and handoff revocation checklist;
+- Docker health/startup documentation and GitHub Actions checks;
+- integration of all role branches, regression fixes, demo seed/reset, and final
+  release evidence.
+
+Done when a clean checkout starts through Docker, all required dependency checks
+pass, the five-activity route and report route work, and the final demo has no
+machine-specific configuration.
+
+### Role 2 — Zhuo: Child experience, assets, and visual system
+
+Start first, in parallel with Role 1:
+
+- import the supplied Activity 3/4/5 assets into the project with stable names,
+  source notes, dimensions, and an asset manifest;
+- remove the answer labels from Activity 4 without regenerating its main scene;
+- verify Activity 2 alongside 3–5 for target visibility, hotspot coordinates,
+  answer leakage, and copyright/source notes; and
+- expose typed scene/focus props and fixture data so other roles can integrate
+  before real content and speech are ready.
+
+Own:
+
+- responsive 5:4 and 3:2 scene layout with normalised hotspot geometry;
+- multiple-target spotlight: dim non-target objects and highlight the requested
+  target without obscuring it;
+- two-level progress (`Activity x of 5`, `Question x of y`), clue, Replay,
+  listening, retry, Skip, Back, and accessible states using React Native Paper;
+- mascot transparent-canvas normalisation, fixed anchor/size, Reanimated
+  crossfade and subtle idle/listening/speaking/celebrating motion;
+- mic ripple and reward-effect visual hooks; Lottie only if it remains optional
+  and compatible; and
+- phone/tablet/web visual and accessibility QA.
+
+Done when Activities 1–5 render from the same component contract, scenes do not
+leak answers, mascot transitions do not jump, and fixtures can demonstrate every
+child-facing state without Azure or report code. Final integration cleanup is
+not Role 2's responsibility.
+
+### Role 3 — Weidu: Content, session, and derived data
+
+Start now with fixture assets/contracts:
+
+- encode Activities 2–5 and consolidate Activity 1 into one typed registry;
+- define prompts, targets, noun aliases, focus geometry references, clues,
+  recasts, and checkpoints; and
+- implement the versioned Context + AsyncStorage session and hydration/reset.
+
+Own:
+
+- compound prompt identity and activity lifecycle/duration events;
+- speech attempts, scaffold/replay, delivery/model/recast, and reward records;
+- attempt-status policy and selectors for all report metrics;
+- content version, delivered copy, monotonic attempt number, Activity 5
+  generalisation, and the open-prompt readiness denominator;
+- fixture factories for low/medium/high participation and Azure failure cases;
+- migration/fallback for invalid stored data without crashing the demo.
+
+Done when a reload resumes the local unit, reset is deterministic, all report
+metrics can be generated from fixtures or real attempts, and Activity 1–5 data
+contains no screen-specific logic.
+
+### Role 4 — Yaqi: Conversation flow, timing, and child safety
+
+Start now against mocked speech and session adapters.
+
+Own:
+
+- one canonical controller used by both runtime and tests;
+- prompt → TTS → listening → staged silence help → evaluation → recast/celebrate
+  → next prompt transitions;
+- the fixed 3s → 6s → 10s → 5s silence schedule, with TTS pausing the timer;
+- clue and Replay timing semantics without duplicate attempt/progress/reward;
+- safe no-response, no-match, permission, offline, service-error, Skip, Back,
+  retry, and unmount behaviour;
+- cancellation and stale-callback protection across rapid taps/navigation;
+- short, encouraging, non-judgmental copy for every Tier and error path.
+
+Done when fake-timer tests cover the full state graph and the same controller is
+used in the real generic activity screen.
+
+### Role 5 — Fanqin: Azure Speech and deterministic Tier scoring
+
+Start now behind the speech adapter; Role 4 and Role 2 use its mock immediately.
+
+Own:
+
+- browser Azure Speech SDK STT and TTS for the Docker + Chrome demo;
+- committed key/region configuration agreed for the private repository;
+- microphone permissions, start/stop/cancel, partial/final transcript, confidence,
+  timeout, retry, and service-error mapping;
+- Kool voice selection and replay with protection against repeated taps;
+- a child-friendly `en-AU` Azure Neural voice with fixed rate, pitch, and volume,
+  followed by one team listening check for the “less robotic” client feedback;
+- Size Word normalisation, fuzzy matching, Tier 1/2/3 classification, natural
+  comparative forms, and false-positive tests;
+- an Expo Go mock adapter and clear UI capability flag; and
+- Expo AV use for compatible app-side audio lifecycle/non-speech playback without
+  replacing Azure as Kool's real voice.
+
+Do not call Pronunciation Assessment and do not use Web Speech or `expo-speech`
+as the successful demo provider. Done when a Docker Chrome session records a
+child utterance, obtains an Azure transcript, classifies it, plays Azure TTS, and
+recovers cleanly from denied permission or Azure failure.
+
+### Role 6 — Yuxuan: Rewards, reports, PDF, and QA
+
+Start now using Role 3 fixture sessions.
+
+Own:
+
+- idempotent engagement coins only at Activity 1/3/5 and a three-coin summary;
+- Tier-aware celebration intensity without correctness-based reward changes;
+- parent and therapist report views from the shared report model;
+- editable note/next-step fields and 3–4 deterministic summary scenarios;
+- frontend HTML template, PDF generation, download, share/fallback, and visual QA;
+- automated end-to-end paths for low, medium, high, skipped, restored, and Azure
+  failure sessions;
+- a usability-test script; execute it and collect evidence only after the
+  team/client arranges approved participants. Do not recruit or record children
+  without the required approval and consent.
+
+Done when the third coin leads to a report generated from the same persisted
+session, screen and PDF numbers match, and download/share behaviour is verified
+in Docker Chrome.
+
+## 7. Integration rule
+
+Ownership and export names come from the Shared Contracts file. Mock/fixture
+adapters remain available so a delayed lane never blocks another role's PR.
+
+## 8. Sprint 2 definition of done
+
+Sprint 2 is complete only when all of the following are demonstrated:
+
+- a clean private-repository checkout runs with `docker compose up` and opens in
+  same-machine Chrome through `localhost`;
+- dependency versions match the required Expo 54 stack;
+- Activities 1–5 run through one generic flow with correct scenes and progress;
+- real Azure STT/TTS works in the Docker Chrome demo using the committed demo key;
+- keyword/Tier logic is deterministic and contains no phoneme scoring or LLM;
+- Replay/clue/Skip/Back/error paths do not duplicate attempts, progress, or coins;
+- exactly three coins are issued after Activities 1, 3, and 5;
+- session reload/resume and reset work through AsyncStorage;
+- parent and therapist reports use real unit-session data and matching metrics;
+- report editing, PDF download, and share/fallback work in Docker Chrome;
+- automated tests cover controller, scoring, selectors, persistence, rewards, and
+  representative end-to-end scenarios;
+- visual/accessibility QA covers 5:4 and 3:2 scenes plus phone/tablet/web layouts;
+- no backend, Supabase connection, authentication, LLM, or complete dashboard was
+  added; and
+- before handoff, the committed Azure demo key is deleted or invalidated in
+  Azure and the team records that this was completed.
