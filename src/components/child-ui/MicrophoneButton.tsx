@@ -104,7 +104,7 @@ export function MicrophoneButton({
         <View style={[styles.iconCircle, layout === 'primary' && styles.primaryIconCircle, state === 'listening' && styles.listeningIconCircle]}>
           <SymbolView
             fallback={<MicrophoneGlyph color={iconColor} />}
-            name={{ android: 'mic', ios: 'mic.fill', web: 'mic' }}
+            name="mic.fill"
             size={48}
             tintColor={iconColor}
           />

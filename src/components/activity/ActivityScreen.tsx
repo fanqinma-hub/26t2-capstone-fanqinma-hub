@@ -509,7 +509,7 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   hotspotLayer: {
-    ...StyleSheet.absoluteFill,
+    ...StyleSheet.absoluteFillObject,
     pointerEvents: 'box-none',
     zIndex: 2,
   },
