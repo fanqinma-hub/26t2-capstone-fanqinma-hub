@@ -10,18 +10,34 @@ services:
 
     ports:
       - "8081:8081"
-      - "19000:19000"
-      - "19001:19001"
-      - "19002:19002"
+
+    env_file:
+      - .env.local
 
     environment:
       EXPO_DEVTOOLS_LISTEN_ADDRESS: 0.0.0.0
-      REACT_NATIVE_PACKAGER_HOSTNAME: 192.168.1.103 # fill your ip 
-
       CHOKIDAR_USEPOLLING: "true"
+      WATCHPACK_POLLING: "true"
 
-    command: >
-      npx expo start --host lan
+    command:
+      - npx
+      - expo
+      - start
+      - --web
+      - --host
+      - lan
+      - --port
+      - "8081"
+      - --clear
+
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - wget -qO- http://127.0.0.1:8081 >/dev/null 2>&1 || exit 1
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 40s
 
     stdin_open: true
     tty: true

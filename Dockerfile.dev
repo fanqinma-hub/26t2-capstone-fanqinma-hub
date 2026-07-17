@@ -1,7 +1,13 @@
-FROM node:20-alpine
+FROM node:20.19.4-alpine
+
 WORKDIR /app
-RUN npm install -g expo
-COPY package*.json ./
-RUN npm install
+
+COPY package.json package-lock.json ./
+
+RUN npm ci
+
 COPY . .
-EXPOSE 8081 19000 19001 19002
+
+EXPOSE 8081
+
+CMD ["npx", "expo", "start", "--web", "--host", "lan", "--port", "8081"]
