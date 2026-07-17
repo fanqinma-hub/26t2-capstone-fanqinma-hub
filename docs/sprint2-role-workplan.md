@@ -51,9 +51,20 @@ The following decisions are closed for Sprint 2:
   celebration but never grants another coin.
 - Activity 4's visible `BIG/MEDIUM/SMALL` labels will be removed. Activity 3/4
   retain their supplied 5:4 assets and the UI also supports 3:2 scenes.
-- Mascot poses remain raster assets. Role 2 normalises their canvases and uses
-  Reanimated crossfades/micro-motion. Lottie is optional only for effects such as
-  coin, mic ripple, sparkle, confetti, and loading.
+- Mascot delivery is Lottie-first. Role 2 builds one cut-out master composition
+  from the client-approved Kool artwork, with shared coordinates and segments for
+  idle, listening, speaking, thinking, success, and controller-reachable
+  transition paths. Shared bridge clips are allowed; no full state-pair matrix
+  is required.
+- Image-assisted work may separate or inpaint occluded parts, but it must derive
+  from the approved artwork rather than independently redesigning body parts.
+- Role 2 owns the visual acceptance gate. If the Lottie result has identity
+  drift, visible seams, scale/anchor jumps, loop snaps, or is otherwise visually
+  unconvincing, Role 2 switches the same mascot component to the approved raster
+  pose + Reanimated fallback. Other roles continue using the same `mascotState`
+  contract and do not branch on the selected renderer.
+- Coin, sparkle, confetti, and loading remain separate Lottie effects. Existing
+  Reanimated mic ripple/clue breathing need not be rewritten.
 - The demo Azure key and region are committed to the private repository for the
   team. Before handoff, the team deletes or invalidates that key in Azure and
   records the completed check.
@@ -68,23 +79,31 @@ The client stack is non-negotiable:
 | Language/routing | TypeScript `~5.9.2`, Expo Router `~6.0.13` |
 | UI/state | React Native Paper `^5.14.5`, React Context API |
 | Audio/storage | Expo AV `^16.0.7`, AsyncStorage `2.2.0` |
+| Animation | Expo 54-compatible `lottie-react-native`; Reanimated fallback |
 | Speech | Azure Speech SDK, current compatible release |
 | Delivery | Docker, Docker Compose, Expo Go, GitHub Actions |
 
 The repository currently uses Expo 56 / RN 0.85 / TypeScript 6 / Router 56, has
-no Paper, AsyncStorage, or connected Azure SDK, and contains only an unverified
-development Docker shell. Role 1 owns alignment to the table above. Do not move
-to Node 22 or `expo-audio`. Supabase JS is excluded because Team ALMOND does not
-build a Supabase connection. Docker pins an exact Node 20.19 patch release because
-Expo SDK 54 requires Node 20.19.x or later within the agreed Node 20 line.
+no Paper, AsyncStorage, connected Azure SDK, or Lottie mascot pipeline, and
+contains only an unverified development Docker shell. Role 1 owns alignment to
+the table above. Do not move to Node 22 or `expo-audio`. Supabase JS is excluded
+because Team ALMOND does not build a Supabase connection. Docker pins an exact
+Node 20.19 patch release because Expo SDK 54 requires Node 20.19.x or later
+within the agreed Node 20 line.
 
 ## 4. Parallel delivery model
 
 All six roles begin in parallel. Nobody waits for a finished downstream feature:
 
 - Role 1 immediately aligns the stack and Docker environment.
-- Role 2 immediately imports Activities 3–5 and builds UI contracts with fixtures.
+- Role 2 first runs the Lottie mascot feasibility/visual gate, then
+  imports Activities 3–5 and builds UI contracts with fixtures.
 - Roles 3–6 immediately build against shared TypeScript contracts and mocks.
+- Role 1 exclusively edits `package.json` and the lockfile, landing the
+  Expo-compatible Lottie dependency as an early isolated baseline. Role 2 starts
+  the artwork/layer/animation work in parallel and does not edit dependency files.
+- The mascot spike never blocks another lane: all consumers target the stable
+  `mascotState` values while Role 2 owns the renderer and fallback internally.
 - Contract changes are announced early and kept backward-compatible where
   possible; short-lived adapters are preferred over blocking another role.
 - Role 1 owns final integration, regression fixes, demo assembly, and handoff.
@@ -131,7 +150,9 @@ Start now:
 - pin an exact Node 20.19.x Docker base, replace floating global Expo installs,
   and use the project-local CLI with `npm ci`;
 - make `docker compose up` serve the Chrome demo on same-machine `localhost`
-  without a personal LAN IP; and
+  without a personal LAN IP;
+- add the Expo 54-compatible `lottie-react-native` dependency in an early,
+  isolated `package.json`/lockfile baseline; and
 - scaffold and merge the approved canonical contract exports so every role can
   develop with mocks, without redefining their semantics.
 
@@ -139,6 +160,8 @@ Own:
 
 - generic unit/activity routes and feature-package boundary;
 - committed demo Azure environment values and handoff revocation checklist;
+- route/hydration loading UI that consumes Role 2's presentational
+  `LoadingEffect` without adding animation policy to routes;
 - Docker health/startup documentation and GitHub Actions checks;
 - integration of all role branches, regression fixes, demo seed/reset, and final
   release evidence.
@@ -151,7 +174,14 @@ machine-specific configuration.
 
 Start first, in parallel with Role 1:
 
-- import the supplied Activity 3/4/5 assets into the project with stable names,
+- build and visually test the mascot animation spike before the remaining Role 2
+  work: derive a transparent cut-out layer pack from the client artwork, generate
+  one Lottie master composition, and cover all five `mascotState` values plus the
+  controller-reachable transition paths;
+- record the visual-gate result and select either `lottie-cutout` or
+  `raster-reanimated` behind the same component contract; include a Docker Chrome
+  and one native-target screenshot or short recording in the Role 2 PR checklist;
+- then import the supplied Activity 3/4/5 assets with stable names,
   source notes, dimensions, and an asset manifest;
 - remove the answer labels from Activity 4 without regenerating its main scene;
 - verify Activity 2 alongside 3–5 for target visibility, hotspot coordinates,
@@ -166,16 +196,20 @@ Own:
   target without obscuring it;
 - two-level progress (`Activity x of 5`, `Question x of y`), clue, Replay,
   listening, retry, Skip, Back, and accessible states using React Native Paper;
-- mascot transparent-canvas normalisation, fixed anchor/size, Reanimated
-  crossfade and subtle idle/listening/speaking/celebrating motion;
-- mic ripple and reward-effect visual hooks; Lottie only if it remains optional
-  and compatible; and
+- one `MascotAnimator` with fixed anchor/size and no renderer-specific branches
+  outside Role 2: prefer the shared-canvas Lottie cut-out rig and retain the
+  normalised raster pose + Reanimated crossfade/micro-motion fallback;
+- presentational `RewardEffect` and `LoadingEffect` Lottie components: Role 6
+  supplies reward policy/intensity/layout and Role 1 supplies loading visibility;
+- the existing Reanimated mic ripple/clue breathing; and
 - phone/tablet/web visual and accessibility QA.
 
 Done when Activities 1–5 render from the same component contract, scenes do not
-leak answers, mascot transitions do not jump, and fixtures can demonstrate every
-child-facing state without Azure or report code. Final integration cleanup is
-not Role 2's responsibility.
+leak answers, the selected mascot renderer covers all five states without visible
+identity drift, seams, anchor/scale jumps, or loop snaps in Docker Chrome and one
+native target, and fixtures demonstrate every child-facing state without Azure
+or report code. The selected mode and visual-gate evidence are recorded. Final
+integration cleanup is not Role 2's responsibility.
 
 ### Role 3 — Weidu: Content, session, and derived data
 
@@ -251,6 +285,8 @@ Own:
 
 - idempotent engagement coins only at Activity 1/3/5 and a three-coin summary;
 - Tier-aware celebration intensity without correctness-based reward changes;
+- reward overlay policy/layout that consumes Role 2's presentational
+  `RewardEffect`; Role 6 does not recreate coin/confetti/sparkle animation assets;
 - parent and therapist report views from the shared report model;
 - editable note/next-step fields and 3–4 deterministic summary scenarios;
 - frontend HTML template, PDF generation, download, share/fallback, and visual QA;
@@ -287,6 +323,10 @@ Sprint 2 is complete only when all of the following are demonstrated:
 - automated tests cover controller, scoring, selectors, persistence, rewards, and
   representative end-to-end scenarios;
 - visual/accessibility QA covers 5:4 and 3:2 scenes plus phone/tablet/web layouts;
+- Role 2's recorded visual gate selects one mascot renderer; every state and
+  controller-reachable transition path uses the same `MascotAnimator` contract,
+  and the chosen path has no visible identity drift, seams, anchor/scale jumps,
+  or loop snaps;
 - no backend, Supabase connection, authentication, LLM, or complete dashboard was
   added; and
 - before handoff, the committed Azure demo key is deleted or invalidated in

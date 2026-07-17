@@ -10,13 +10,16 @@
 - A breaking change needs the owning role and at least one consuming role to
   approve the PR. Additive optional fields may proceed with owner approval.
 - Each role edits its owned files and consumes other domains through exports.
+- Role 1 exclusively edits `package.json` and the lockfile. It lands the
+  Expo-compatible Lottie dependency as an early isolated baseline; Role 2 owns
+  animation code/assets and does not edit dependency files.
 - TypeScript blocks below fix public names and shapes; imports are omitted for
   brevity. Implementations may add private types but must not reinterpret fields.
 
 | Canonical target | Owner | Consumers |
 | --- | --- | --- |
 | `src/types/activity.types.ts`, `src/content/size-words/` | Role 3 | 1, 2, 4, 5, 6 |
-| `src/types/visual.types.ts`, activity components, `src/constants/size-word-assets.ts` | Role 2 | 1, 3, 4, 5, 6 |
+| `src/types/visual.types.ts`, activity/mascot components, visual assets and manifests | Role 2 | 1, 3, 4, 5, 6 |
 | `src/types/session.types.ts`, `src/types/metrics.types.ts`, `src/session/` | Role 3 | 1, 4, 5, 6 |
 | `src/types/conversation.types.ts`, `src/conversation/` | Role 4 | 1, 2, 3, 5 |
 | `src/types/speech.types.ts`, `src/services/speech/`, scoring utilities | Role 5 | 2, 3, 4, 6 |
@@ -40,6 +43,8 @@ conversation contract, and one `ActivityDefinition`.
   with live attempts.
 - Rewards are engagement-based, idempotent, and fixed after Activities 1, 3, 5.
 - UI never calculates Tier, metrics, rewards, timing, or persistence.
+- `mascotState` describes behaviour, not rendering technology. Only Role 2's
+  `MascotAnimator` selects Lottie or fallback; no consumer branches on its mode.
 - Conversation never performs STT/TTS directly; it calls `SpeechAdapter`.
 - Reports never infer events from activity scripts; they use recorded session
   events and selectors.
@@ -54,6 +59,9 @@ export type SceneAssetKey =
   | 'farmers-market' | 'beach-day';
 export type SceneAspectRatio = '3:2' | '5:4';
 export type FocusTargetId = `activity-${1 | 2 | 3 | 4 | 5}:${string}`;
+export type MascotState =
+  | 'idle' | 'speaking' | 'listening' | 'thinking' | 'success';
+export type RewardEffectKind = 'coin' | 'sparkle' | 'confetti';
 
 export interface NormalizedRect {
   x: number; y: number; width: number; height: number;
@@ -75,6 +83,27 @@ export interface SceneAssetManifestEntry {
   accessibilityLabel: string;
   sourceNote: string;
   focusTargets: readonly FocusTarget[];
+}
+
+export interface MascotAnimatorProps {
+  state: MascotState;
+  celebrationIntensity: 'gentle' | 'standard' | 'enhanced' | null;
+  reducedMotion: boolean;
+  accessibilityLabel: string;
+}
+
+export interface RewardEffectProps {
+  effect: RewardEffectKind;
+  intensity: 'gentle' | 'standard' | 'enhanced';
+  playKey: string;
+  reducedMotion: boolean;
+  onComplete(): void;
+}
+
+export interface LoadingEffectProps {
+  visible: boolean;
+  reducedMotion: boolean;
+  accessibilityLabel: string;
 }
 ```
 
@@ -167,7 +196,7 @@ export interface ActivityScreenViewModel {
   visualState: ChildVisualState;
   koolMessage: string;
   statusLine?: string;
-  mascotState: 'idle' | 'speaking' | 'listening' | 'thinking' | 'success';
+  mascotState: MascotState;
   microphoneState: 'idle' | 'listening' | 'processing' | 'disabled' | 'error';
   audioLevel: number;
   activeFocusTargetIds: readonly FocusTargetId[];
@@ -199,6 +228,37 @@ branches.
 `audioLevel` is clamped from 0 to 1. `activeFocusTargetIds` must be a subset of
 the supplied `focusTargets`; Role 2 owns the target ids and geometry, while Role
 3 prompt definitions only reference those ids.
+
+`MascotAnimator` is a renderer boundary owned by Role 2. Its primary
+implementation is one Lottie cut-out master composition built from the
+client-approved Kool artwork. All state clips and controller-reachable transition
+paths share one canvas, anchor, scale, layer pack, and coordinate system; shared
+bridge clips are allowed and a full state-pair transition matrix is not required.
+Image-assisted work may separate existing parts and inpaint hidden pixels; it
+must not independently redesign the mascot or introduce a second visual identity.
+
+The release selects exactly one renderer through Role 2-owned configuration; it
+is not a view-model field or a runtime choice for consumers. Role 2 selects
+`lottie-cutout` only after the five states and controller-reachable paths pass
+visual QA in Docker Chrome and one native target: approved identity and colours
+are preserved; repeated transitions show no visible seams, transparent fringe,
+drift, anchor/scale jumps, or loop snaps; and reduced-motion output remains
+understandable. If Role 2 judges the result visually unconvincing, the component
+switches to `raster-reanimated`, using normalised client-approved poses,
+crossfades, and micro-motion. Props, state semantics, layout footprint, tests,
+and consuming code remain unchanged in either mode.
+
+Role 2 records the selected mode in its PR checklist with a screenshot or short
+recording from Docker Chrome and one native target. Role 1 owns the early,
+isolated `lottie-react-native` dependency/lockfile baseline; Role 2 does not edit
+those files.
+
+`RewardEffect` and `LoadingEffect` are Role 2-owned presentational Lottie
+components. `RewardEffect` never decides whether a coin was earned or which
+intensity applies: Role 6's `RewardOverlay` supplies those props and owns reward
+policy/layout. Role 1 supplies `LoadingEffect.visible` from route/hydration state.
+Role 6 and Role 1 do not recreate animation assets. Existing Reanimated mic
+ripple and clue breathing stay inside Role 2's activity UI.
 
 All Size Words prompts accept a valid child utterance without correctness
 penalty. `readinessEligible` only controls the separate open-prompt readiness
@@ -743,7 +803,7 @@ but production download/share rejects any view-model whose mode is not `live`.
 
 | Role | Exports |
 | --- | --- |
-| 2 | `ActivityScreen`, `sizeWordSceneAssets` |
+| 2 | `ActivityScreen`, `MascotAnimator`, `RewardEffect`, `LoadingEffect`, `sizeWordSceneAssets` |
 | 3 | `sizeWordsUnit`, `SessionProvider`, `useSession`, `selectSessionMetrics` |
 | 4 | `useConversationController` |
 | 5 | `createLiveAzureSpeechAdapter`, `createMockSpeechAdapter`, `classifySizeWords` |
