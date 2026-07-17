@@ -60,6 +60,9 @@ jobs:
       - name: Run project quality checks
         run: npm run check
 
+      - name: Export static Web bundle
+        run: npm run export:web
+
       - name: Reject tracked local environment files
         shell: bash
         run: |

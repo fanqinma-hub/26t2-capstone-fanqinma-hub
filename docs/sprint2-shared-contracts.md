@@ -251,9 +251,15 @@ switches to `raster-reanimated`, using normalised client-approved poses,
 crossfades, and micro-motion. Props, state semantics, layout footprint, tests,
 and consuming code remain unchanged in either mode.
 
+Regardless of the selected release renderer, `MascotAnimator` reserves its
+layout footprint and may show an approved poster/raster internally while Lottie
+loads or after a renderer failure. This fail-safe is not a consumer-visible mode
+and does not change public props, speech mode, or conversation state.
+
 Role 2 records the selected mode in its PR checklist with a screenshot or short
 recording from Docker Chrome and one native target. Role 1 owns the early,
-isolated `lottie-react-native` dependency/lockfile baseline; Role 2 does not edit
+isolated `lottie-react-native` dependency/lockfile baseline, including required
+Web renderer peers and a static Web export smoke check; Role 2 does not edit
 those files.
 
 `RewardEffect` and `LoadingEffect` are Role 2-owned presentational Lottie

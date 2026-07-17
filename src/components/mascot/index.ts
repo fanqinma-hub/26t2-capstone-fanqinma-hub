@@ -1,5 +1,4 @@
 export type {
-  MascotAnimationState,
   MascotAnimatorProps,
-  MascotRenderer,
+  MascotState,
 } from './mascot-animation.types';
