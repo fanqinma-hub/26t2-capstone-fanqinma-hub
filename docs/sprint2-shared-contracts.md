@@ -41,6 +41,9 @@ conversation contract, and one `ActivityDefinition`.
   scene content box after aspect-fit, never the outer screen.
 - Real reports accept only a `live` Azure session. Fixture attempts never mix
   with live attempts.
+- Azure key/region values exist only in ignored local `.env.local` files. They
+  are never committed, persisted in session data, logged, copied into a Docker
+  image layer, or supplied as Docker build arguments.
 - Rewards are engagement-based, idempotent, and fixed after Activities 1, 3, 5.
 - UI never calculates Tier, metrics, rewards, timing, or persistence.
 - `mascotState` describes behaviour, not rendering technology. Only Role 2's
@@ -271,7 +274,7 @@ allowlists.
 export type SpeechOperationId = string;
 export type SpeechErrorCode =
   | 'permission_denied' | 'no_match' | 'cancelled'
-  | 'timeout' | 'network' | 'service' | 'unsupported';
+  | 'timeout' | 'network' | 'service' | 'unsupported' | 'configuration';
 export type DeliveryKind =
   | 'prompt' | 'reprompt' | 'clue' | 'model' | 'recast' | 'replay';
 export type DeliveryStatus = 'delivered' | 'failed' | 'cancelled';
@@ -327,6 +330,22 @@ export interface SpeechAdapter {
   stopAll(): Promise<void>;
 }
 
+export interface AzureSpeechRuntimeConfig {
+  subscriptionKey: string;
+  region: string;
+  source: 'env-local';
+}
+
+export type SpeechRuntimeMode = 'mock' | 'azure';
+
+export type SpeechAdapterInitResult =
+  | { ok: true; adapter: SpeechAdapter }
+  | { ok: false; code: 'configuration'; message: string };
+
+export type CreateLiveAzureSpeechAdapter = (
+  config: AzureSpeechRuntimeConfig,
+) => SpeechAdapterInitResult;
+
 export interface TierResult {
   tier: ResponseTier;
   detectedKeywords: readonly SizeWordKeyword[];
@@ -350,8 +369,46 @@ Only Azure produces a successful live result. Classification is deterministic,
 case-insensitive, prompt-aware, and uses the confirmed fuzzy threshold `> 0.65`.
 Pronunciation Assessment is not called.
 
-Committed demo environment names are `EXPO_PUBLIC_AZURE_SPEECH_KEY` and
-`EXPO_PUBLIC_AZURE_SPEECH_REGION`; Role 1 and Role 5 use no alternative names.
+The only credential environment names are `EXPO_PUBLIC_AZURE_SPEECH_KEY` and
+`EXPO_PUBLIC_AZURE_SPEECH_REGION`; Role 1 and Role 5 use no alternatives. The
+non-secret `EXPO_PUBLIC_SPEECH_MODE` is exactly `mock` or `azure`. Credentials
+are intentionally visible in the local browser bundle for this small-team demo,
+but must originate only from `.env.local`. No token broker or backend is added.
+
+Role 1 owns environment loading and passes `AzureSpeechRuntimeConfig` to Role
+5's `createLiveAzureSpeechAdapter` only when mode is `azure`. Role 5 validates
+both values before creating an Azure recognizer or synthesizer. Missing/blank
+values return the failed `SpeechAdapterInitResult`; no Azure object is created.
+Role 1 shows configuration-unavailable UI for that result. Missing/invalid
+`EXPO_PUBLIC_SPEECH_MODE` is the same configuration-unavailable state. Mode
+`mock` explicitly creates `createMockSpeechAdapter`; the app never silently
+changes an Azure session to mock or counts a mock attempt as live.
+
+Speech runtime initialisation must finish before Role 1 dispatches
+`UNIT_STARTED`. The mapping is fixed: `mock` uses the mock adapter and
+`UNIT_STARTED.mode = 'fixture'`; only `azure` plus a successful
+`SpeechAdapterInitResult` uses the live adapter and `UNIT_STARTED.mode = 'live'`.
+Missing/invalid mode or failed Azure initialisation dispatches no `UNIT_STARTED`
+and creates no session. Role 3 continues rejecting any attempt source that does
+not match the persisted session mode.
+
+The repository commits `.env.example` with mock mode and empty credentials only:
+
+```dotenv
+EXPO_PUBLIC_SPEECH_MODE=mock
+EXPO_PUBLIC_AZURE_SPEECH_KEY=
+EXPO_PUBLIC_AZURE_SPEECH_REGION=
+```
+
+Both `.gitignore` and `.dockerignore` include `.env`, `.env.local`, and
+`.env.*.local`. Docker Compose reads the host `.env.local` at container runtime;
+the Dockerfile must not declare the key as `ARG` or `ENV`. CI runs secret scanning,
+`git check-ignore -q .env.local` must succeed, and `.env.local` must not appear in
+`git ls-files`. Before Docker checks, CI copies `.env.example` to an untracked
+`.env.local` and uses its explicit mock mode, so CI requires no real key. Only
+teammates who need live testing receive the key privately. Before handoff, the
+key is invalidated/deleted in Azure, local containers are stopped, and all local
+copies plus generated web bundles/caches containing it are removed.
 
 Only one speech operation may be active. `cancel` and `stopAll` are idempotent;
 late results from an old `operationId` are ignored.

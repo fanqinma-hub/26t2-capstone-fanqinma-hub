@@ -65,9 +65,13 @@ The following decisions are closed for Sprint 2:
   contract and do not branch on the selected renderer.
 - Coin, sparkle, confetti, and loading remain separate Lottie effects. Existing
   Reanimated mic ripple/clue breathing need not be rewritten.
-- The demo Azure key and region are committed to the private repository for the
-  team. Before handoff, the team deletes or invalidates that key in Azure and
-  records the completed check.
+- The Azure key and region are never committed, even to the private repository.
+  Live-demo values exist only in each authorised teammate's ignored
+  `.env.local`; the team privately shares them only with people who need live
+  Azure testing. Their exposure in the local browser bundle is an accepted
+  small-team demo limitation, not a production credential design.
+- No token broker or application backend is added. Before handoff, the team
+  deletes or invalidates the locally used key in Azure and records the check.
 
 ## 3. Required stack and current gap
 
@@ -102,6 +106,9 @@ All six roles begin in parallel. Nobody waits for a finished downstream feature:
 - Role 1 exclusively edits `package.json` and the lockfile, landing the
   Expo-compatible Lottie dependency as an early isolated baseline. Role 2 starts
   the artwork/layer/animation work in parallel and does not edit dependency files.
+- Role 1 also lands the credential-empty environment template, ignore rules,
+  and Docker local-environment wiring early so Role 5 can test live Azure without
+  any secret entering Git.
 - The mascot spike never blocks another lane: all consumers target the stable
   `mascotState` values while Role 2 owns the renderer and fallback internally.
 - Contract changes are announced early and kept backward-compatible where
@@ -151,6 +158,13 @@ Start now:
   and use the project-local CLI with `npm ci`;
 - make `docker compose up` serve the Chrome demo on same-machine `localhost`
   without a personal LAN IP;
+- commit `.env.example` with mock mode and blank credentials, ignore
+  `.env`/`.env.local`/`.env.*.local` in
+  both `.gitignore` and `.dockerignore`, and wire Docker Compose to read the
+  host's `.env.local` at container runtime rather than a Docker build argument;
+- add a CI secret scan and verify `git check-ignore -q .env.local` before live
+  credentials are used; CI creates its untracked mock `.env.local` by copying
+  `.env.example` before Docker checks;
 - add the Expo 54-compatible `lottie-react-native` dependency in an early,
   isolated `package.json`/lockfile baseline; and
 - scaffold and merge the approved canonical contract exports so every role can
@@ -159,16 +173,21 @@ Start now:
 Own:
 
 - generic unit/activity routes and feature-package boundary;
-- committed demo Azure environment values and handoff revocation checklist;
+- credential-empty Azure environment template, local setup instructions,
+  secret-exclusion checks, and the handoff revocation checklist;
+- explicit speech-mode selection: `mock` starts a fixture session; only a
+  successfully initialised `azure` adapter starts a live session; invalid mode or
+  configuration starts no session and shows configuration-unavailable UI;
 - route/hydration loading UI that consumes Role 2's presentational
   `LoadingEffect` without adding animation policy to routes;
 - Docker health/startup documentation and GitHub Actions checks;
 - integration of all role branches, regression fixes, demo seed/reset, and final
   release evidence.
 
-Done when a clean checkout starts through Docker, all required dependency checks
-pass, the five-activity route and report route work, and the final demo has no
-machine-specific configuration.
+Done when a clean checkout can copy `.env.example` to `.env.local`, start through
+Docker, and use mock mode with blank values or live Azure with privately supplied
+values; all dependency/secret checks pass, the activity/report routes work, and
+no real credential is tracked or copied into a Docker image layer.
 
 ### Role 2 — Zhuo: Child experience, assets, and visual system
 
@@ -260,7 +279,10 @@ Start now behind the speech adapter; Role 4 and Role 2 use its mock immediately.
 Own:
 
 - browser Azure Speech SDK STT and TTS for the Docker + Chrome demo;
-- committed key/region configuration agreed for the private repository;
+- explicit `EXPO_PUBLIC_SPEECH_MODE=mock|azure` selection and exact local-only
+  `EXPO_PUBLIC_AZURE_SPEECH_KEY` and
+  `EXPO_PUBLIC_AZURE_SPEECH_REGION` configuration, with clear unavailable/error
+  handling when Azure mode has a blank credential;
 - microphone permissions, start/stop/cancel, partial/final transcript, confidence,
   timeout, retry, and service-error mapping;
 - Kool voice selection and replay with protection against repeated taps;
@@ -310,10 +332,14 @@ adapters remain available so a delayed lane never blocks another role's PR.
 Sprint 2 is complete only when all of the following are demonstrated:
 
 - a clean private-repository checkout runs with `docker compose up` and opens in
-  same-machine Chrome through `localhost`;
+  same-machine Chrome through `localhost` after the documented `.env.local`
+  setup;
 - dependency versions match the required Expo 54 stack;
 - Activities 1–5 run through one generic flow with correct scenes and progress;
-- real Azure STT/TTS works in the Docker Chrome demo using the committed demo key;
+- real Azure STT/TTS works in Docker Chrome using the ignored local demo key;
+- `.env.example` contains no credential values; `.env.local` is ignored by Git
+  and Docker, no key is present in tracked files/history or a Docker image layer,
+  and the CI secret scan passes;
 - keyword/Tier logic is deterministic and contains no phoneme scoring or LLM;
 - Replay/clue/Skip/Back/error paths do not duplicate attempts, progress, or coins;
 - exactly three coins are issued after Activities 1, 3, and 5;
@@ -329,5 +355,6 @@ Sprint 2 is complete only when all of the following are demonstrated:
   or loop snaps;
 - no backend, Supabase connection, authentication, LLM, or complete dashboard was
   added; and
-- before handoff, the committed Azure demo key is deleted or invalidated in
-  Azure and the team records that this was completed.
+- before handoff, the locally used Azure demo key is deleted or invalidated in
+  Azure, local copies and generated bundles/caches containing it are removed,
+  local containers are stopped, and the team records that this was completed.
