@@ -6,6 +6,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useSharedValue } from 'react-native-reanimated';
 
 import { ActivityScreen } from '@/components/activity';
+import { appRoutes } from '@/config/app-config';
 import { clientUiAssets } from '@/constants/client-assets';
 import type { Activity1DemoState } from '@/demo/useActivity1DemoFlow';
 import { useActivity1DemoFlow } from '@/demo/useActivity1DemoFlow';
@@ -577,8 +578,8 @@ export default function ActivityRoute() {
         koolMessage={demo.message}
         mascotState={demo.mascotState}
         microphoneState={microphoneState}
-        onBackPress={() => router.replace('/')}
-        onCompletePress={() => router.push('/report?from=activityComplete')}
+        onBackPress={() => router.replace(appRoutes.home)}
+        onCompletePress={() => router.push(appRoutes.reportFromActivityComplete)}
         onHotspotPress={handleHelpPress}
         onMicrophonePressIn={handleHoldStart}
         onMicrophonePressOut={handleHoldEnd}

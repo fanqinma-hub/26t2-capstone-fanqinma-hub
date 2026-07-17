@@ -1,116 +1,108 @@
-﻿# FunWattle Size Words Demo — Team ALMOND
+# FunWattle Size Words - Team ALMOND
 
-This repository contains Team ALMOND's Sprint 1 frontend demo for the FunWattle Size Words learning unit.
+FunWattle is Team ALMOND's COMP9900 application for the Size Words learning unit, Big, Small and Everything in Between.
 
-## Project Overview
+This repository establishes the Sprint 2 platform, routing, environment, Docker, CI, and integration baseline.
 
-The project is a child-facing speech and language learning prototype for FunWattle.  
-The current MVP focuses on one Size Words learning unit: **Big, Small and Everything in Between!**
+Canonical requirements and contracts:
 
-The child starts from a simple learning unit card, enters Activity 1, interacts with Kool the Koala, and then reaches a demo report view.
+- `docs/sprint2-role-workplan.md`
+- `docs/sprint2-shared-contracts.md`
 
-## Sprint 1 Demo Scope
+## Technical baseline
 
-The current Sprint 1 demo includes:
+- Expo SDK 54 and React Native 0.81.5
+- TypeScript 5.9 with strict checking
+- Expo Router with typed routes
+- Node.js 20.19.4
+- Project-local Expo CLI
+- Docker on `http://localhost:8081`
+- Explicit `mock` or `azure` runtime configuration
+- Automated quality and repository security checks
+- Dependabot and repository security policy
 
-- Home / Size Words unit entry screen
-- Activity 1 visual interaction screen with its multi-prompt kitchen-scene conversation
-- Kool the Koala dialogue and speech bubble/subtitle presentation
-- Silence scaffold states (3 / 6 / 10s gentle cue, reprompt, tap-to-help) for child support during the activity
-- Press-and-hold voice answer via the browser Web Speech API (Chrome), with deterministic Tier 1/2/3 scoring on the transcript
-- `SpeechAttempt` (transcript, detected size words, tier) written into the in-memory session
-- Coin reward popup at the activity checkpoint
-- Parent and therapist demo report views
-- Basic app navigation flow between Home, Activity 1, and Demo Report
+## Prerequisites
 
-## Current Demo Flow
+Use Node.js 20.19.x, npm, Docker Desktop, and Chrome.
 
-```text
-Home
-↓
-Start Activity
-↓
-Activity 1
-↓
-Kool prompt / scaffold states
-↓
-Press-and-hold voice answer (Web Speech STT → Tier 1/2/3)
-↓
-Coin reward → Activity complete
-↓
-Demo Report
-↓
-Parent / Therapist view
-↓
-Back Home
-```
+Do not install or use a global Expo CLI.
+
+## Environment setup
+
+Create the ignored local environment file with:
+
+`Copy-Item .env.example .env.local`
+
+The committed template uses mock mode and blank credentials:
+
+- `EXPO_PUBLIC_SPEECH_MODE=mock`
+- `EXPO_PUBLIC_AZURE_SPEECH_KEY` must remain blank in the committed template
+- `EXPO_PUBLIC_AZURE_SPEECH_REGION` must remain blank in the committed template
+
+Azure credentials must exist only in `.env.local`. Never commit them or place them in issues, PRs, logs, screenshots, or Docker build arguments.
+
+## Install and validate
+
+Run:
+
+1. `npm ci`
+2. `npm run check`
+3. `npm audit --audit-level=high`
+
+`npm run check` validates Expo dependencies, TypeScript, ESLint, and Jest tests.
+
+Do not run `npm audit fix --force` without reviewing Expo SDK compatibility.
+
+## Run locally
+
+Run `npx expo start --web --port 8081`, then open `http://localhost:8081`.
 
 ## Run with Docker
 
-1. (Optional) Open `docker-compose.yml` and update your local IP address for the environment variable:
+1. Run `docker compose up --build`.
+2. Open `http://localhost:8081`.
+3. Check status with `docker compose ps`.
+4. Stop with `docker compose down`.
 
-   ```yaml
-   REACT_NATIVE_PACKAGER_HOSTNAME: 192.168.1.103 # Fill in your computer's local IP here
-   ```
+No personal LAN IP is required.
 
-   *Note: If this is not set correctly, it will not affect your testing; you can still connect manually-> exp://<YOUR_COMPUTER_LAN_IP>:8081*
+## Route contract
 
-2. Start the development server:
+Canonical routes are exported by `src/config/app-config.ts`.
 
-   ```bash
-   docker-compose up
-   ```
+| Surface | Route |
+| --- | --- |
+| Home | `/` |
+| Generic activity | `/activity/1` through `/activity/5` |
+| Report | `/report` |
 
-## Run Locally
+Pages must consume `appRoutes` instead of duplicating route strings.
 
-Install dependencies:
+## Runtime configuration
 
-```bash
-npm install
-```
+- Mock mode works without Azure credentials.
+- Azure mode requires both a local key and region.
+- Missing or invalid configuration returns a configuration error.
+- Azure mode must never silently fall back to mock mode.
 
-Run lint:
+## Security
 
-```bash
-npm run lint
-```
+The repository must not track private environment files, credentials, personal LAN IP addresses, dependency directories, or generated output.
 
-Start the Expo development server:
+See `SECURITY.md` for the reporting policy.
 
-```bash
-npx expo start -c
-```
+## Pull requests
 
-Press `w` in the terminal to open the web version.
+Before requesting review, run:
 
-For the voice demo, use **Chrome on the web**: press and hold the microphone to talk, then release. The browser will ask for microphone permission on first use. The Web Speech API is web-only, so the spoken-answer path is not available in the native (Expo Go) build.
+1. `npm ci`
+2. `npm run check`
+3. `npm audit --audit-level=high`
+4. `git diff --check`
 
-## Current Limitations
-
-This is a Sprint 1 demo baseline, not the final product.
-
-Current limitations:
-
-- The voice demo uses the browser Web Speech API and is best run in **Chrome on the web** (`w`). It is demo-grade, not production-grade or cross-browser/native hardened. The repo also ships `ISTTAdapter` mock/Azure adapters as the future/native path.
-- Tier scoring runs deterministically on the captured transcript for Activity 1; thresholds and edge cases are still being tuned.
-- Only Activity 1 is available as a demo flow.
-- The polished parent/therapist report cards still use sample fixtures; the report surfaces the real captured session payload alongside them. Dynamic full-unit report generation comes in a later sprint.
-- Session state is in-memory only; no persistence.
-- No backend, login, database, or deployment is included in the MVP scope.
-
-## Development Notes
-
-The Sprint 1 goal is to provide a stable frontend baseline that can be extended by each role in later sprints.
-
-The current implementation focuses on:
-
-- Clear child-facing interaction
-- A simple Size Words activity flow
-- Reusable data and session-state structure
-- Early report and reward direction
-- Integration readiness for future STT, scoring, rewards, and full report generation
+The GitHub Actions Quality Gate must pass before merge.
 
 ## Team
 
 Team ALMOND  
-COMP9900 26T2
+COMP9900, UNSW, 26T2

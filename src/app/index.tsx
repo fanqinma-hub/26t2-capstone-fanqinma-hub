@@ -3,6 +3,7 @@ import { Image, Pressable, StyleSheet, Text, useWindowDimensions, View } from 'r
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { KoolMascot } from '@/components/child-ui';
+import { appRoutes } from '@/config/app-config';
 import { brandAssets } from '@/constants/brand-assets';
 import { clientUiAssets } from '@/constants/client-assets';
 import { BrandColors, clamp, ComponentSizes, isSmallPhone, Radii, SemanticColors, Spacing, Typography } from '@/theme';
@@ -97,7 +98,7 @@ export default function HomeScreen() {
           <View style={{ gap: layout.cardGap }}>
             <Pressable
               accessibilityRole="button"
-              onPress={() => router.push('/activity/1')}
+              onPress={() => router.push(appRoutes.activity('1'))}
               style={({ pressed }) => [
                 styles.primaryButton,
                 { minHeight: layout.buttonHeight },
@@ -108,7 +109,7 @@ export default function HomeScreen() {
 
             <Pressable
               accessibilityRole="button"
-              onPress={() => router.push('/report')}
+              onPress={() => router.push(appRoutes.report)}
               style={({ pressed }) => [
                 styles.secondaryButton,
                 { minHeight: layout.buttonHeight },

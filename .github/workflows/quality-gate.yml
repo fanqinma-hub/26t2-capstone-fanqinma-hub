@@ -1,0 +1,84 @@
+name: Quality Gate
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: quality-gate-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  quality:
+    name: TypeScript, lint, tests and security
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    env:
+      CI: true
+      EXPO_PUBLIC_SPEECH_MODE: mock
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20.19.4
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Prepare CI mock environment
+        run: cp .env.example .env.local
+
+      - name: Verify local environment exclusion
+        shell: bash
+        run: |
+          git check-ignore -q .env.local
+          if git ls-files --error-unmatch .env.local >/dev/null 2>&1; then
+            echo "Private .env.local file is tracked."
+            exit 1
+          fi
+
+      - name: Validate Docker Compose configuration
+        run: docker compose config --quiet
+
+      - name: Reject high and critical dependency vulnerabilities
+        run: npm audit --audit-level=high
+
+      - name: Run project quality checks
+        run: npm run check
+
+      - name: Reject tracked local environment files
+        shell: bash
+        run: |
+          forbidden="$(git ls-files | grep -E '(^|/)\.env$|(^|/)\.env\.local$|(^|/)\.env\..*\.local$' || true)"
+          if [ -n "$forbidden" ]; then
+            echo "Tracked private environment files detected:"
+            echo "$forbidden"
+            exit 1
+          fi
+
+      - name: Reject committed Azure credentials
+        shell: bash
+        run: |
+          public_key_name="EXPO_PUBLIC_AZURE_SPEECH_KEY"
+          server_key_name="AZURE_SPEECH_KEY"
+          pattern="(${public_key_name}|${server_key_name})=[^[:space:]]+"
+          matches="$(git grep -l -I -E "$pattern" -- ':!package-lock.json' ':!.env.example' || true)"
+          if [ -n "$matches" ]; then
+            echo "Possible committed Azure credentials detected in:"
+            echo "$matches"
+            exit 1
+          fi

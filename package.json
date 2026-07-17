@@ -1,5 +1,5 @@
 {
-  "name": "funwattle-temp",
+  "name": "funwattle",
   "main": "expo-router/entry",
   "version": "1.0.0",
   "dependencies": {
@@ -49,7 +49,8 @@
     "ios": "expo start --ios",
     "web": "expo start --web",
     "test": "jest --runInBand",
-    "lint": "expo lint"
+    "lint": "expo lint",
+    "check": "expo install --check && tsc --noEmit && npm run lint && npm test"
   },
   "private": true
 }
