@@ -52,6 +52,10 @@ The following decisions are closed for Sprint 2:
 - Activity 4 uses the supplied client original unchanged; its visible
   `BIG/MEDIUM/SMALL` placards are intentional by client decision. Activity 3/4
   retain their supplied 5:4 assets and the UI also supports 3:2 scenes.
+- Before the real Role 3–6 adapters are integrated, the formal Activity route
+  may consume an explicit, replaceable fixture adapter for the Activity 1–5 UI
+  demonstration. This fixture milestone makes no live session, scoring, reward,
+  persistence, or report claim; `ui-preview` remains QA-only.
 - Mascot delivery is Lottie-first. Role 2 builds one cut-out master composition
   from the client-approved Kool artwork, with shared coordinates and segments for
   idle, listening, speaking, thinking, success, and controller-reachable
@@ -187,6 +191,8 @@ Own:
   configuration starts no session and shows configuration-unavailable UI;
 - route/hydration loading UI that consumes Role 2's presentational
   `LoadingEffect` without adding animation policy to routes;
+- the temporary formal Activity 1–5 fixture route, including its explicit demo
+  adapter boundary and later replacement by the owning domain adapters;
 - Docker health/startup documentation and GitHub Actions checks;
 - integration of all role branches, regression fixes, demo seed/reset, and final
   release evidence.
