@@ -1,0 +1,44 @@
+Starting project at C:\Users\86176\Desktop\9900workshop\capstone-project-26t2-9900-f13c-almond
+Using src/app as the root directory for Expo Router.
+React Compiler enabled
+Starting Metro Bundler
+
+Waiting on http://localhost:8081
+An update for expo is available: 56.0.12 → ~56.0.13
+6 other packages may need updating. Run npx expo install --check for details.
+Logs for your project will appear below.
+λ Bundled 10389ms node_modules\expo\node_modules\@expo\cli\node_modules\@expo\router-server\node\render.js (1344 modules)
+Web Bundled 11545ms node_modules\expo-router\entry.js (1309 modules)
+Web Bundled 1070ms node_modules\expo-router\entry.js (1302 modules)
+Web  INFO  %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+Web  LOG  Running application "main" with appParams:
+ {"hydrate": undefined, "rootTag": "#root"} 
+Development-level warnings: ON.
+Performance optimizations: OFF.
+Web  WARN  props.pointerEvents is deprecated. Use style.pointerEvents
+λ Bundled 121ms node_modules\expo\node_modules\@expo\cli\node_modules\@expo\router-server\node\render.js (1 module)
+Web Bundled 1042ms node_modules\expo-router\entry.js (1 module)
+Web Bundled 103ms node_modules\expo-router\entry.js (1 module)
+Web  INFO  %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+Web  LOG  Running application "main" with appParams:
+ {"hydrate": undefined, "rootTag": "#root"} 
+Development-level warnings: ON.
+Performance optimizations: OFF.
+Web  WARN  props.pointerEvents is deprecated. Use style.pointerEvents
+λ Bundled 113ms node_modules\expo\node_modules\@expo\cli\node_modules\@expo\router-server\node\render.js (1 module)
+Web Bundled 1212ms node_modules\expo-router\entry.js (1 module)
+Web Bundled 94ms node_modules\expo-router\entry.js (1 module)
+Web  INFO  %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+Web  LOG  Running application "main" with appParams:
+ {"hydrate": undefined, "rootTag": "#root"} 
+Development-level warnings: ON.
+Performance optimizations: OFF.
+Web  WARN  props.pointerEvents is deprecated. Use style.pointerEvents
+λ Bundled 344ms node_modules\expo\node_modules\@expo\cli\node_modules\@expo\router-server\node\render.js (1 module)
+Web Bundled 1581ms node_modules\expo-router\entry.js (1 module)
+Web Bundled 1807ms node_modules\expo-router\entry.js (1 module)
+Web  INFO  %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+Web  LOG  Running application "main" with appParams:
+ {"hydrate": undefined, "rootTag": "#root"} 
+Development-level warnings: ON.
+Performance optimizations: OFF.
