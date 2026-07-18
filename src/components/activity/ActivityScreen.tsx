@@ -8,6 +8,7 @@ import { KoolDialogue, KoolMascot, type KoolDialogueVariant, type KoolMascotStat
 import { BrandColors, clamp, ComponentSizes, isTablet, moderateScale, Radii, scale, SemanticColors, Spacing, Typography } from '@/theme';
 
 import type { ActivityHotspot, ActivityScreenProps, ActivityScreenVisualState } from './types';
+import { buildSpotlightDimRegions } from './spotlight-geometry';
 
 export type ActivityScreenVisualStatePresentation = {
   dialogueVariant?: KoolDialogueVariant;
@@ -164,6 +165,10 @@ function HotspotOverlay({ hotspot, onPress }: { hotspot: ActivityHotspot; onPres
 function HighlightedObject({ hotspot }: { hotspot: ActivityHotspot }) {
   const systemReducedMotion = useReducedMotion();
   const pulse = useSharedValue(1);
+  const dimRegions = useMemo(
+    () => buildSpotlightDimRegions([hotspot]),
+    [hotspot],
+  );
   const animatedStyle = useAnimatedStyle(() => ({
     opacity: 0.45 + pulse.value * 0.55,
     transform: [{ scale: 0.98 + pulse.value * 0.04 }],
@@ -189,19 +194,35 @@ function HighlightedObject({ hotspot }: { hotspot: ActivityHotspot }) {
   }, [pulse, systemReducedMotion]);
 
   return (
-    <Animated.View
-      pointerEvents="none"
-      style={[
-        styles.objectHighlight,
-        {
-          height: toPercentage(hotspot.height),
-          left: toPercentage(hotspot.x),
-          top: toPercentage(hotspot.y),
-          width: toPercentage(hotspot.width),
-        },
-        animatedStyle,
-      ]}
-    />
+    <>
+      {dimRegions.map((region, index) => (
+        <View
+          key={`spotlight-dim-${index}`}
+          style={[
+            styles.sceneDim,
+            {
+              height: toPercentage(region.height),
+              left: toPercentage(region.x),
+              top: toPercentage(region.y),
+              width: toPercentage(region.width),
+            },
+          ]}
+        />
+      ))}
+      <Animated.View
+        pointerEvents="none"
+        style={[
+          styles.objectHighlight,
+          {
+            height: toPercentage(hotspot.height),
+            left: toPercentage(hotspot.x),
+            top: toPercentage(hotspot.y),
+            width: toPercentage(hotspot.width),
+          },
+          animatedStyle,
+        ]}
+      />
+    </>
   );
 }
 
@@ -538,12 +559,17 @@ const styles = StyleSheet.create({
     color: '#1F1A17',
   },
   objectHighlight: {
-    backgroundColor: 'rgba(255, 146, 31, 0.22)',
-    borderColor: BrandColors.tangerine,
+    borderColor: BrandColors.mimosa,
     borderRadius: Radii.medium,
     borderWidth: 4,
     position: 'absolute',
     zIndex: 3,
+  },
+  sceneDim: {
+    backgroundColor: 'rgba(24, 16, 24, 0.62)',
+    pointerEvents: 'none',
+    position: 'absolute',
+    zIndex: 2,
   },
   mascotMicRow: {
     alignItems: 'flex-end',

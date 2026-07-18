@@ -49,7 +49,8 @@ The following decisions are closed for Sprint 2:
   platform.
 - Coins are granted only after Activities 1, 3, and 5. Tier 3 may strengthen the
   celebration but never grants another coin.
-- Activity 4's visible `BIG/MEDIUM/SMALL` labels will be removed. Activity 3/4
+- Activity 4 uses the supplied client original unchanged; its visible
+  `BIG/MEDIUM/SMALL` placards are intentional by client decision. Activity 3/4
   retain their supplied 5:4 assets and the UI also supports 3:2 scenes.
 - Mascot delivery is Lottie-first. Role 2 builds one cut-out master composition
   from the client-approved Kool artwork, with shared coordinates and segments for
@@ -208,7 +209,8 @@ Start first, in parallel with Role 1:
   and one native-target screenshot or short recording in the Role 2 PR checklist;
 - then import the supplied Activity 3/4/5 assets with stable names,
   source notes, dimensions, and an asset manifest;
-- remove the answer labels from Activity 4 without regenerating its main scene;
+- use the supplied Activity 4 original unchanged and verify its visible pumpkin
+  placards match the client decision;
 - verify Activity 2 alongside 3–5 for target visibility, hotspot coordinates,
   answer leakage, and copyright/source notes; and
 - expose typed scene/focus props and fixture data so other roles can integrate

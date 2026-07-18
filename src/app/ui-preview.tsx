@@ -7,6 +7,7 @@ import { Image, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { activityScreenVisualStatePresentation } from '@/components/activity/ActivityScreen';
 import type { ActivityScreenVisualState } from '@/components/activity';
+import { Role2SceneDemo } from '@/components/activity/dev';
 import {
   FeedbackBubble,
   type FeedbackBubbleVariant,
@@ -93,6 +94,10 @@ export default function UiPreviewScreen() {
         <View accessible accessibilityLabel={clientScenes.activity1.label} style={styles.sceneFrame}>
           <Image accessible accessibilityLabel="Activity 1 scene" resizeMode="contain" source={clientScenes.activity1.source} style={styles.sceneImage} />
         </View>
+      </PreviewSection>
+
+      <PreviewSection title="Activity 2–5 development fixture">
+        <Role2SceneDemo />
       </PreviewSection>
 
       <PreviewSection title="Activity visual states">

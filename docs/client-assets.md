@@ -127,9 +127,20 @@
 | 115.png | assets/client/icons/icon-115.png | Icon | Renamed only; bytes preserved. |
 | 116.png | assets/client/icons/icon-116.png | Icon | Renamed only; bytes preserved. |
 
-## Missing assets pending client confirmation
+## Sprint 2 Role 2 scene additions
 
-- Final scene images for Activities 3, 4 and 5.
+These files were supplied as task attachments and are also embedded in the
+workbook `Team ALMOND TASKS.xlsx`. The repository copies preserve the supplied
+bytes unchanged.
+
+| Supplied filename | Repository filename | Import date | Handling |
+| --- | --- | --- | --- |
+| `image-1.png` | `assets/client/scenes/activity-03.png` | 2026-07-18 | Copied unchanged; bytes preserved. |
+| `image-2.png` | `assets/client/scenes/activity-04-original.png` | 2026-07-18 | Copied unchanged and permanently retained. |
+| `image-3.png` | `assets/client/scenes/activity-05.png` | 2026-07-18 | Copied unchanged; bytes preserved. |
+
+The complete checksum and source record is in
+`docs/role2-scene-asset-provenance.md`.
 
 The supplied FunWattle logos and Kool character reference are documented in
 `docs/brand-assets.md`.
