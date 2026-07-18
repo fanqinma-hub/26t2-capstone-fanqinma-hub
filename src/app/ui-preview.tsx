@@ -2,12 +2,13 @@
  * Development-only component state gallery. Re-evaluate or remove this route before a production release.
  */
 import { Redirect } from 'expo-router';
+import { useState } from 'react';
 import type { ReactNode } from 'react';
-import { Image, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { activityScreenVisualStatePresentation } from '@/components/activity/ActivityScreen';
 import type { ActivityScreenVisualState } from '@/components/activity';
-import { Role2SceneDemo } from '@/components/activity/dev';
+import { Role2ActivityFlowDemo, Role2SceneDemo } from '@/components/activity/dev';
 import {
   FeedbackBubble,
   type FeedbackBubbleVariant,
@@ -15,8 +16,6 @@ import {
   type KoolDialogueVariant,
   KoolMascot,
   type KoolMascotState,
-  ListeningIndicator,
-  type ListeningIndicatorState,
   MicrophoneButton,
   type MicrophoneButtonState,
   ProgressIndicator,
@@ -26,15 +25,6 @@ import { ComponentSizes, SemanticColors, Spacing, Typography } from '@/theme';
 
 const dialogueVariants: KoolDialogueVariant[] = ['default', 'prompt', 'gentle'];
 const microphoneStates: MicrophoneButtonState[] = ['idle', 'listening', 'processing', 'disabled', 'error'];
-const listeningStates: ListeningIndicatorState[] = [
-  'listening',
-  'gentleCue',
-  'reprompt',
-  'tapHelpAvailable',
-  'finalListening',
-  'processing',
-  'error',
-];
 const feedbackVariants: FeedbackBubbleVariant[] = ['neutral', 'encouragement', 'success', 'help', 'error'];
 const activityVisualStates: ActivityScreenVisualState[] = [
   'prompt',
@@ -62,8 +52,14 @@ function PreviewSection({ children, title }: { children: ReactNode; title: strin
 }
 
 export default function UiPreviewScreen() {
+  const [showActivityFlow, setShowActivityFlow] = useState(false);
+
   if (!__DEV__) {
     return <Redirect href="/" />;
+  }
+
+  if (showActivityFlow) {
+    return <Role2ActivityFlowDemo onExit={() => setShowActivityFlow(false)} />;
   }
 
   return (
@@ -71,6 +67,12 @@ export default function UiPreviewScreen() {
       <View style={styles.heading}>
         <Text style={styles.title}>FunWattle UI preview</Text>
         <Text style={styles.subtitle}>Development-only visual checks for every shared component state.</Text>
+        <Pressable
+          accessibilityRole="button"
+          onPress={() => setShowActivityFlow(true)}
+          style={styles.flowPreviewButton}>
+          <Text style={styles.flowPreviewButtonText}>Open complete Activity 1–5 visual flow</Text>
+        </Pressable>
       </View>
 
       <PreviewSection title="Kool dialogue">
@@ -120,12 +122,6 @@ export default function UiPreviewScreen() {
         ))}
       </PreviewSection>
 
-      <PreviewSection title="Listening indicator">
-        {listeningStates.map((state) => (
-          <ListeningIndicator key={state} state={state} />
-        ))}
-      </PreviewSection>
-
       <PreviewSection title="Progress indicator">
         <ProgressIndicator currentActivity={2} totalActivities={5} />
         <ProgressIndicator currentActivity={0} totalActivities={0} />
@@ -162,6 +158,20 @@ const styles = StyleSheet.create({
   subtitle: {
     ...Typography.body,
     color: SemanticColors.secondaryText,
+  },
+  flowPreviewButton: {
+    alignItems: 'center',
+    backgroundColor: SemanticColors.surfaceAccent,
+    borderColor: SemanticColors.focus,
+    borderRadius: 24,
+    borderWidth: 2,
+    minHeight: 56,
+    paddingHorizontal: Spacing.three,
+    paddingVertical: Spacing.two,
+  },
+  flowPreviewButtonText: {
+    ...Typography.button,
+    color: SemanticColors.primaryText,
   },
   section: {
     gap: Spacing.two,

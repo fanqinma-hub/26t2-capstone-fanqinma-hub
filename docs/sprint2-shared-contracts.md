@@ -257,8 +257,10 @@ layout footprint and may show an approved poster/raster internally while Lottie
 loads or after a renderer failure. This fail-safe is not a consumer-visible mode
 and does not change public props, speech mode, or conversation state.
 
-Role 2 records the selected mode in its PR checklist with a screenshot or short
-recording from Docker Chrome and one native target. Role 1 owns the early,
+Role 2 records the selected mode in its PR checklist and confirms visual QA in
+Chrome and one native target. A screenshot or short recording may be attached to
+the PR or identified as externally shared acceptance evidence; media does not
+need to be committed to the repository. Role 1 owns the early,
 isolated `lottie-react-native` dependency/lockfile baseline, including required
 Web renderer peers and a static Web export smoke check; Role 2 does not edit
 those files.

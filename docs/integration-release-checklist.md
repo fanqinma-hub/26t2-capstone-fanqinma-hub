@@ -80,7 +80,8 @@ Use this checklist for Sprint 2 integration PRs, the final demo candidate, and p
 - [ ] Touch targets and focus states remain usable.
 - [ ] Important images and controls have accessible labels.
 - [ ] Reduced-motion behaviour remains understandable.
-- [ ] Role 2 records Docker Chrome and native-target mascot evidence.
+- [ ] Role 2 records Chrome and native-target mascot verification, with any
+  attached or externally shared acceptance evidence identified.
 - [ ] The selected mascot renderer has no seam, drift, or anchor jump.
 
 ## 8. PR evidence

@@ -1,5 +1,10 @@
 const clamp01 = (value: number) => Math.min(Math.max(value, 0), 1);
 const GROUPED_UNION_AREA_LIMIT = 0.24;
+const MINIMUM_SMALL_SPOTLIGHT_SIZE = 44;
+
+export const clueBreathingDurationMs = 1100;
+export const clueMarkerMinimumOpacity = 0.3;
+export const clueMarkerMaximumOpacity = 0.8;
 
 export type SpotlightRect = Readonly<{
   x: number;
@@ -7,6 +12,139 @@ export type SpotlightRect = Readonly<{
   width: number;
   height: number;
 }>;
+
+function percentage(value: number): `${number}%` {
+  const rounded = Math.round(clamp01(value) * 100000) / 1000;
+  return `${rounded}%`;
+}
+
+export function getNormalizedRectStyle(rect: SpotlightRect) {
+  return {
+    height: percentage(rect.height),
+    left: percentage(rect.x),
+    top: percentage(rect.y),
+    width: percentage(rect.width),
+  };
+}
+
+export function isSmallClueTarget(rect: SpotlightRect): boolean {
+  return rect.width < 0.18 || rect.height < 0.2;
+}
+
+/**
+ * Gives tiny targets a readable visual surround without changing the authored
+ * target contract. Call this only after grouped/sequential presentation has
+ * been resolved so padding cannot change overlap decisions.
+ */
+export function getSpotlightVisualRect(
+  rect: SpotlightRect,
+  sceneSize: Readonly<{ width: number; height: number }>,
+): SpotlightRect {
+  const normalized = normalizeSpotlightRect(rect);
+  if (
+    !isSmallClueTarget(normalized) ||
+    sceneSize.width <= 0 ||
+    sceneSize.height <= 0
+  ) {
+    return normalized;
+  }
+
+  const padding = Math.min(Math.max(Math.min(sceneSize.width, sceneSize.height) * 0.012, 5), 8);
+  const width = Math.min(
+    1,
+    Math.max(
+      normalized.width + (padding * 2) / sceneSize.width,
+      MINIMUM_SMALL_SPOTLIGHT_SIZE / sceneSize.width,
+    ),
+  );
+  const height = Math.min(
+    1,
+    Math.max(
+      normalized.height + (padding * 2) / sceneSize.height,
+      MINIMUM_SMALL_SPOTLIGHT_SIZE / sceneSize.height,
+    ),
+  );
+  const centreX = normalized.x + normalized.width / 2;
+  const centreY = normalized.y + normalized.height / 2;
+
+  return {
+    x: Math.min(Math.max(centreX - width / 2, 0), 1 - width),
+    y: Math.min(Math.max(centreY - height / 2, 0), 1 - height),
+    width,
+    height,
+  };
+}
+
+function interpolateRect(
+  original: SpotlightRect,
+  expanded: SpotlightRect,
+  progress: number,
+): SpotlightRect {
+  return {
+    x: original.x + (expanded.x - original.x) * progress,
+    y: original.y + (expanded.y - original.y) * progress,
+    width: original.width + (expanded.width - original.width) * progress,
+    height: original.height + (expanded.height - original.height) * progress,
+  };
+}
+
+/**
+ * Preserves the authored separation between multiple targets. If ideal tiny
+ * padding would make neighbouring frames cross, all visual expansion eases
+ * back just enough to keep the frames touching rather than overlapping.
+ */
+export function getSpotlightVisualRects(
+  rects: readonly SpotlightRect[],
+  sceneSize: Readonly<{ width: number; height: number }>,
+): readonly SpotlightRect[] {
+  const originals = rects.map(normalizeSpotlightRect);
+  const expanded = originals.map((rect) => getSpotlightVisualRect(rect, sceneSize));
+  const intersects = (candidates: readonly SpotlightRect[]) =>
+    candidates.some((rect, index) =>
+      candidates.slice(index + 1).some((candidate) => rectsIntersect(rect, candidate)),
+    );
+
+  if (!intersects(expanded)) return expanded;
+
+  let lower = 0;
+  let upper = 1;
+  for (let iteration = 0; iteration < 12; iteration += 1) {
+    const middle = (lower + upper) / 2;
+    const candidates = originals.map((rect, index) => interpolateRect(rect, expanded[index], middle));
+    if (intersects(candidates)) upper = middle;
+    else lower = middle;
+  }
+  return originals.map((rect, index) => interpolateRect(rect, expanded[index], lower));
+}
+
+export function fitSceneFrameWidth(
+  area: Readonly<{ width: number; height: number }>,
+  aspectRatio: number,
+  maxWidth = 900,
+): number {
+  if (area.width <= 0 || area.height <= 0 || aspectRatio <= 0) return 0;
+  return Math.max(0, Math.min(area.width, area.height * aspectRatio, maxWidth));
+}
+
+export function getClueMarkerPosition(rect: SpotlightRect) {
+  return {
+    left: percentage(rect.x + rect.width / 2),
+    top: percentage(rect.y + rect.height / 2),
+  };
+}
+
+export function getClueMarkerPositions(rects: readonly SpotlightRect[]) {
+  return rects.map(getClueMarkerPosition);
+}
+
+export function getSceneCropStyle(rect: SpotlightRect) {
+  return {
+    height: `${100 / rect.height}%` as `${number}%`,
+    left: `${-(rect.x / rect.width) * 100}%` as `${number}%`,
+    top: `${-(rect.y / rect.height) * 100}%` as `${number}%`,
+    width: `${100 / rect.width}%` as `${number}%`,
+  };
+}
 
 export type SpotlightPresentation = Readonly<{
   mode: 'individual' | 'grouped' | 'sequential';

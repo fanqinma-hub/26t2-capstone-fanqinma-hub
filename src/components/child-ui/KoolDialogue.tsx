@@ -7,6 +7,7 @@ export type KoolDialogueVariant = 'default' | 'prompt' | 'gentle';
 export type KoolDialogueProps = {
   message: string;
   speakerLabel?: string;
+  trailingLabel?: string;
   variant?: KoolDialogueVariant;
   size?: 'default' | 'compact';
   accessibilityLabel?: string;
@@ -21,6 +22,7 @@ const variantLabels: Record<KoolDialogueVariant, string> = {
 export function KoolDialogue({
   message,
   speakerLabel,
+  trailingLabel,
   variant = 'default',
   size = 'default',
   accessibilityLabel,
@@ -30,9 +32,18 @@ export function KoolDialogue({
   return (
     <View
       accessible
-      accessibilityLabel={accessibilityLabel ?? `${label}: ${message}`}
+      accessibilityLabel={
+        accessibilityLabel ?? `${label}${trailingLabel ? `. ${trailingLabel}` : ''}: ${message}`
+      }
       style={[styles.container, styles[variant], size === 'compact' && styles.containerCompact]}>
-      <Text style={[styles.speaker, size === 'compact' && styles.speakerCompact]}>{label}</Text>
+      <View style={styles.labelRow}>
+        <Text style={[styles.speaker, size === 'compact' && styles.speakerCompact]}>{label}</Text>
+        {trailingLabel ? (
+          <Text style={[styles.trailingLabel, size === 'compact' && styles.trailingLabelCompact]}>
+            {trailingLabel}
+          </Text>
+        ) : null}
+      </View>
       <Text style={[styles.message, size === 'compact' && styles.messageCompact]}>{message}</Text>
     </View>
   );
@@ -47,8 +58,8 @@ const styles = StyleSheet.create({
   },
   containerCompact: {
     gap: Spacing.half,
-    paddingHorizontal: 12,
-    paddingVertical: Spacing.two,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
   },
   default: {
     backgroundColor: SemanticColors.surface,
@@ -67,8 +78,23 @@ const styles = StyleSheet.create({
     color: SemanticColors.secondaryText,
   },
   speakerCompact: {
-    fontSize: 17,
-    lineHeight: 22,
+    fontSize: 16,
+    lineHeight: 20,
+  },
+  labelRow: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: Spacing.two,
+    justifyContent: 'space-between',
+  },
+  trailingLabel: {
+    ...Typography.label,
+    color: SemanticColors.secondaryText,
+    textAlign: 'right',
+  },
+  trailingLabelCompact: {
+    fontSize: 16,
+    lineHeight: 20,
   },
   message: {
     ...Typography.speech,
@@ -76,6 +102,6 @@ const styles = StyleSheet.create({
   },
   messageCompact: {
     fontSize: 20,
-    lineHeight: 27,
+    lineHeight: 26,
   },
 });

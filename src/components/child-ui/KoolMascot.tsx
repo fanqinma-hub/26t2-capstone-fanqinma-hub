@@ -1,25 +1,59 @@
 import { useEffect } from 'react';
-import { Image, StyleSheet } from 'react-native';
+import { StyleSheet } from 'react-native';
 import Animated, { cancelAnimation, useAnimatedStyle, useReducedMotion, useSharedValue, withRepeat, withSequence, withTiming } from 'react-native-reanimated';
 
 import { brandAssets } from '@/constants/brand-assets';
+import { assetVisualMetrics, type AssetVisualMetrics } from '@/constants/asset-visual-metrics.gen';
 import { scale } from '@/theme';
+
+import { VisualArtwork, visualContentAspect } from './VisualArtwork';
 
 export type KoolMascotState = 'idle' | 'wave' | 'speaking' | 'listening' | 'thinking' | 'retry' | 'success' | 'breathe';
 
 export type KoolMascotProps = {
   state: KoolMascotState;
   size?: 'small' | 'medium' | 'large';
+  /** Exact height of the visible artwork; overrides the size preset. */
+  visualHeight?: number;
   isSpeaking?: boolean;
   reducedMotion?: boolean;
   accessibilityLabel?: string;
 };
 
-const mascotSizes = {
-  small: { height: scale(174), width: scale(120) },
-  medium: { height: scale(236), width: scale(168) },
-  large: { height: scale(340), width: scale(270) },
+const mascotMetrics: Record<KoolMascotState, AssetVisualMetrics> = {
+  idle: assetVisualMetrics.koolIdle,
+  wave: assetVisualMetrics.koolWave,
+  speaking: assetVisualMetrics.koolSpeaking,
+  listening: assetVisualMetrics.koolListening,
+  thinking: assetVisualMetrics.koolThinking,
+  retry: assetVisualMetrics.koolRetry,
+  success: assetVisualMetrics.koolSuccess,
+  breathe: assetVisualMetrics.koolBreathe,
+};
+
+// Matches the visible artwork height the previous canvas-box presets produced,
+// so existing screens keep the same on-screen mascot size.
+const mascotVisualHeights = {
+  small: scale(144),
+  medium: scale(194),
+  large: scale(320),
 } as const;
+
+// Widest pose (wave) decides the slot width so the layout box never jumps
+// horizontally when the pose changes.
+const mascotSlotAspect = Math.max(...Object.values(mascotMetrics).map(visualContentAspect));
+
+/**
+ * Kool's neckline measured from the top of the visible artwork, as a fraction
+ * of its height. Used by screens to align companion elements (for example the
+ * microphone centre) with Kool's neck.
+ */
+export const MASCOT_NECK_RATIO = 0.34;
+
+/** Layout footprint of the mascot for a given visible-artwork height. */
+export function getMascotSlotSize(visualHeight: number) {
+  return { height: visualHeight, width: visualHeight * mascotSlotAspect };
+}
 
 const stateLabels: Record<KoolMascotState, string> = {
   idle: 'Kool is ready to learn',
@@ -32,7 +66,7 @@ const stateLabels: Record<KoolMascotState, string> = {
   breathe: 'Kool is taking a slow breath',
 };
 
-export function KoolMascot({ state, size = 'medium', isSpeaking, reducedMotion, accessibilityLabel }: KoolMascotProps) {
+export function KoolMascot({ state, size = 'medium', visualHeight, isSpeaking, reducedMotion, accessibilityLabel }: KoolMascotProps) {
   const systemReducedMotion = useReducedMotion();
   const shouldReduceMotion = reducedMotion ?? Boolean(systemReducedMotion);
   const translateX = useSharedValue(0);
@@ -84,12 +118,18 @@ export function KoolMascot({ state, size = 'medium', isSpeaking, reducedMotion, 
     };
   }, [animatedState, scale, shouldReduceMotion, translateX, translateY]);
 
+  const resolvedVisualHeight = visualHeight ?? mascotVisualHeights[size];
+
   return (
     <Animated.View
       accessible
       accessibilityLabel={accessibilityLabel ?? stateLabels[animatedState]}
-      style={[styles.container, mascotSizes[size], animatedStyle]}>
-      <Image accessible={false} resizeMode="contain" source={brandAssets.kool[animatedState].source} style={styles.image} />
+      style={[styles.container, getMascotSlotSize(resolvedVisualHeight), animatedStyle]}>
+      <VisualArtwork
+        metrics={mascotMetrics[animatedState]}
+        source={brandAssets.kool[animatedState].source}
+        visualHeight={resolvedVisualHeight}
+      />
     </Animated.View>
   );
 }
@@ -97,10 +137,7 @@ export function KoolMascot({ state, size = 'medium', isSpeaking, reducedMotion, 
 const styles = StyleSheet.create({
   container: {
     alignItems: 'center',
-    justifyContent: 'center',
-  },
-  image: {
-    height: '100%',
-    width: '100%',
+    justifyContent: 'flex-end',
+    overflow: 'visible',
   },
 });
