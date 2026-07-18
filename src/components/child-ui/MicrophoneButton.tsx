@@ -1,8 +1,20 @@
+import { useEffect } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
-import Animated, { useAnimatedStyle, type SharedValue } from 'react-native-reanimated';
-import { SymbolView } from 'expo-symbols';
+import Animated, {
+  cancelAnimation,
+  Easing,
+  useAnimatedStyle,
+  useReducedMotion,
+  useSharedValue,
+  withRepeat,
+  withTiming,
+  type SharedValue,
+} from 'react-native-reanimated';
 
+import { assetVisualMetrics } from '@/constants/asset-visual-metrics.gen';
 import { BrandColors, ComponentSizes, Radii, SemanticColors, Spacing, Typography } from '@/theme';
+
+import { VisualArtwork } from './VisualArtwork';
 
 export type MicrophoneButtonState = 'idle' | 'listening' | 'processing' | 'disabled' | 'error';
 
@@ -14,6 +26,8 @@ export type MicrophoneButtonProps = {
   accessibilityLabel?: string;
   layout?: 'default' | 'primary';
   showLabel?: boolean;
+  /** Diameter of the visible microphone badge; overrides the layout default. */
+  visualSize?: number;
   /** 0..1 live mic level; drives the "I can hear you" waveform while holding. */
   audioLevel?: SharedValue<number>;
 };
@@ -49,13 +63,46 @@ const stateContent: Record<
   },
 };
 
-function MicrophoneGlyph({ color }: { color: string }) {
+const microphoneArtwork = require('../../../assets/brand/ui/microphone-funwattle.png');
+const microphoneMetrics = assetVisualMetrics.microphoneFunwattle;
+const primaryMicrophoneSize = ComponentSizes.microphoneButton + Spacing.three;
+
+/**
+ * Distance from the bottom of the primary-layout button to the centre of the
+ * visible microphone badge. Screens use this to align the badge centre with a
+ * companion element (for example Kool's neckline).
+ */
+export function getMicrophoneVisualCenterFromBottom(visualSize: number, showLabel: boolean): number {
+  const labelBlock = showLabel ? Typography.status.lineHeight + Spacing.one : 0;
+  return labelBlock + visualSize / 2;
+}
+
+function ProgressiveVoiceRing({
+  audioLevel,
+  offset,
+  phase,
+  size,
+}: Readonly<{
+  audioLevel?: SharedValue<number>;
+  offset: number;
+  phase: SharedValue<number>;
+  size: number;
+}>) {
+  const animatedStyle = useAnimatedStyle(() => {
+    const progress = (phase.value + offset) % 1;
+    const level = audioLevel?.value ?? 0;
+    return {
+      opacity: (1 - progress) * (0.22 + level * 0.45),
+      transform: [{ scale: 0.82 + progress * 0.58 + level * 0.06 }],
+    };
+  });
+
   return (
-    <View accessibilityElementsHidden importantForAccessibility="no-hide-descendants" style={styles.glyph}>
-      <View style={[styles.glyphHead, { backgroundColor: color }]} />
-      <View style={[styles.glyphStem, { backgroundColor: color }]} />
-      <View style={[styles.glyphBase, { backgroundColor: color }]} />
-    </View>
+    <Animated.View
+      pointerEvents="none"
+      style={[styles.waveRing, { height: size, width: size }, animatedStyle]}
+      testID="microphone-wave-ring"
+    />
   );
 }
 
@@ -67,20 +114,29 @@ export function MicrophoneButton({
   accessibilityLabel,
   layout = 'default',
   showLabel = true,
+  visualSize,
   audioLevel,
 }: MicrophoneButtonProps) {
   const content = stateContent[state];
   const isDisabled = state === 'disabled' || state === 'processing';
-  const iconColor = state === 'listening' ? BrandColors.marsala : SemanticColors.primaryText;
+  const reducedMotion = Boolean(useReducedMotion());
+  const wavePhase = useSharedValue(0);
+  const microphoneSize = visualSize ?? (layout === 'primary' ? primaryMicrophoneSize : ComponentSizes.microphoneButton);
 
-  // Expands and brightens with the live mic level while the child holds and talks.
-  const waveStyle = useAnimatedStyle(() => {
-    const level = audioLevel?.value ?? 0;
-    return {
-      opacity: 0.16 + level * 0.5,
-      transform: [{ scale: 1 + level * 0.42 }],
-    };
-  });
+  useEffect(() => {
+    cancelAnimation(wavePhase);
+    wavePhase.set(reducedMotion ? 0.35 : 0);
+    if (state !== 'listening' || reducedMotion) return () => cancelAnimation(wavePhase);
+
+    wavePhase.set(
+      withRepeat(
+        withTiming(1, { duration: 1800, easing: Easing.linear }),
+        -1,
+        false,
+      ),
+    );
+    return () => cancelAnimation(wavePhase);
+  }, [reducedMotion, state, wavePhase]);
 
   return (
     <Pressable
@@ -100,15 +156,19 @@ export function MicrophoneButton({
         pressed && !isDisabled && styles.pressed,
       ]}>
       <View style={styles.iconWrap}>
-        {state === 'listening' ? <Animated.View pointerEvents="none" style={[styles.wave, waveStyle]} /> : null}
-        <View style={[styles.iconCircle, layout === 'primary' && styles.primaryIconCircle, state === 'listening' && styles.listeningIconCircle]}>
-          <SymbolView
-            fallback={<MicrophoneGlyph color={iconColor} />}
-            name="mic.fill"
-            size={48}
-            tintColor={iconColor}
-          />
-        </View>
+        {state === 'listening' ? (
+          <>
+            <ProgressiveVoiceRing audioLevel={audioLevel} offset={0} phase={wavePhase} size={microphoneSize} />
+            <ProgressiveVoiceRing audioLevel={audioLevel} offset={1 / 3} phase={wavePhase} size={microphoneSize} />
+            <ProgressiveVoiceRing audioLevel={audioLevel} offset={2 / 3} phase={wavePhase} size={microphoneSize} />
+          </>
+        ) : null}
+        <VisualArtwork
+          imageOpacity={isDisabled ? 0.58 : undefined}
+          metrics={microphoneMetrics}
+          source={microphoneArtwork}
+          visualHeight={microphoneSize}
+        />
       </View>
       {showLabel ? (
         <View style={[styles.copy, layout === 'primary' && styles.primaryCopy]}>
@@ -153,49 +213,32 @@ const styles = StyleSheet.create({
   pressed: {
     opacity: 0.8,
   },
+  // Content-sized on purpose: the button's layout box is the visible badge
+  // plus its label, so screens can align against it without dead space.
   primaryButton: {
     alignSelf: 'center',
     backgroundColor: 'transparent',
     borderWidth: 0,
     flexDirection: 'column',
     gap: Spacing.one,
-    minHeight: ComponentSizes.microphoneButton + Spacing.five,
-    minWidth: ComponentSizes.microphoneButton + Spacing.five,
+    minHeight: ComponentSizes.minimumTouchTarget,
+    minWidth: ComponentSizes.minimumTouchTarget,
     padding: 0,
   },
   primaryIconOnly: {
-    minHeight: ComponentSizes.microphoneButton,
-    minWidth: ComponentSizes.microphoneButton,
+    minHeight: ComponentSizes.minimumTouchTarget,
+    minWidth: ComponentSizes.minimumTouchTarget,
   },
   iconWrap: {
     alignItems: 'center',
     justifyContent: 'center',
+    overflow: 'visible',
   },
-  wave: {
-    backgroundColor: BrandColors.mimosa,
+  waveRing: {
     borderRadius: Radii.pill,
-    height: ComponentSizes.microphoneButton,
-    position: 'absolute',
-    width: ComponentSizes.microphoneButton,
-  },
-  iconCircle: {
-    alignItems: 'center',
-    backgroundColor: SemanticColors.surface,
-    borderRadius: Radii.pill,
-    height: ComponentSizes.microphoneButton,
-    justifyContent: 'center',
-    width: ComponentSizes.microphoneButton,
-  },
-  primaryIconCircle: {
-    backgroundColor: BrandColors.tangerine,
-    borderColor: BrandColors.marsala,
-    borderWidth: Spacing.half,
-    height: ComponentSizes.microphoneButton,
-    width: ComponentSizes.microphoneButton,
-  },
-  listeningIconCircle: {
-    borderColor: BrandColors.marsala,
+    borderColor: BrandColors.mimosa,
     borderWidth: 4,
+    position: 'absolute',
   },
   copy: {
     flex: 1,
@@ -214,28 +257,5 @@ const styles = StyleSheet.create({
   helperText: {
     ...Typography.bodySmall,
     color: SemanticColors.secondaryText,
-  },
-  glyph: {
-    alignItems: 'center',
-    height: 48,
-    justifyContent: 'flex-end',
-    width: 48,
-  },
-  glyphHead: {
-    borderRadius: 12,
-    height: 28,
-    width: 18,
-  },
-  glyphStem: {
-    borderRadius: 2,
-    height: 12,
-    marginTop: 2,
-    width: 4,
-  },
-  glyphBase: {
-    borderRadius: 2,
-    height: 4,
-    marginTop: 1,
-    width: 22,
   },
 });

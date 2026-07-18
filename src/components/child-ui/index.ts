@@ -4,3 +4,4 @@ export * from './KoolMascot';
 export * from './ListeningIndicator';
 export * from './MicrophoneButton';
 export * from './ProgressIndicator';
+export * from './VisualArtwork';
