@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Image, Pressable, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import type { LayoutChangeEvent } from 'react-native';
 import { useReducedMotion, useSharedValue } from 'react-native-reanimated';
@@ -25,6 +25,11 @@ import {
   getSpotlightPhaseCount,
   resolveSpotlightPresentation,
 } from './spotlight-geometry';
+import {
+  beginMicrophoneHold,
+  endMicrophoneHold,
+  isSceneContainerAccessible,
+} from './activity-presentation-interactions';
 import { ClueHotspot, SceneSpotlightOverlay } from './SceneInteractionOverlay';
 
 export type ActivityPresentationScreenProps = Readonly<{
@@ -123,7 +128,7 @@ function SceneSpotlight({
 
   return (
     <View
-      accessible
+      accessible={isSceneContainerAccessible(viewModel.showClueTargets)}
       accessibilityLabel={scene.accessibilityLabel}
       style={[
         styles.sceneFrame,
@@ -161,6 +166,7 @@ export function ActivityPresentationScreen({ viewModel, actions, scene }: Activi
   const micEnabled = viewModel.canStartMicrophone || viewModel.canStopMicrophone;
   const sceneAspectRatio = viewModel.sceneAspectRatio === '5:4' ? 5 / 4 : 3 / 2;
   const [sceneArea, setSceneArea] = useState({ width: 0, height: 0 });
+  const microphoneHoldActive = useRef(false);
   const fittedSceneWidth = useMemo(() => {
     const fitted = fitSceneFrameWidth(sceneArea, sceneAspectRatio);
     return Math.min(fitted, fluid.sceneMaxHeight * sceneAspectRatio);
@@ -187,6 +193,14 @@ export function ActivityPresentationScreen({ viewModel, actions, scene }: Activi
   useEffect(() => {
     audioLevel.set(Math.max(0, Math.min(1, viewModel.audioLevel)));
   }, [audioLevel, viewModel.audioLevel]);
+
+  const startMicrophoneHold = () => {
+    beginMicrophoneHold(viewModel.canStartMicrophone, microphoneHoldActive, actions.onMicrophoneStart);
+  };
+
+  const stopMicrophoneHold = () => {
+    endMicrophoneHold(viewModel.canStopMicrophone, microphoneHoldActive, actions.onMicrophoneStop);
+  };
 
   const header = (
     <View style={styles.header}>
@@ -236,7 +250,8 @@ export function ActivityPresentationScreen({ viewModel, actions, scene }: Activi
             accessibilityLabel={micEnabled ? undefined : 'Microphone unavailable in this visual state'}
             audioLevel={audioLevel}
             layout="primary"
-            onPress={viewModel.canStopMicrophone ? actions.onMicrophoneStop : actions.onMicrophoneStart}
+            onPressIn={startMicrophoneHold}
+            onPressOut={stopMicrophoneHold}
             showLabel={fluid.showMicLabel}
             state={micEnabled ? viewModel.microphoneState : 'disabled'}
             visualSize={fluid.micVisualSize}

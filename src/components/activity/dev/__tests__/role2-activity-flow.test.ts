@@ -2,6 +2,11 @@ import { role2ActivityFlowFixtures, role2ActivityFlowStateOrder } from '@/fixtur
 
 import { mascotRasterTransitionMs } from '../../../mascot/mascot-animation.types';
 import {
+  beginMicrophoneHold,
+  endMicrophoneHold,
+  isSceneContainerAccessible,
+} from '../../activity-presentation-interactions';
+import {
   clueBreathingDurationMs,
   clueMarkerMaximumOpacity,
   clueMarkerMinimumOpacity,
@@ -58,6 +63,30 @@ describe('Role 2 generic Activity presentation fixtures', () => {
       expect(complete.canContinue).toBe(true);
       expect(complete.canSkip).toBe(false);
     }
+  });
+
+  it('starts the microphone on hold and stops it on release', () => {
+    const holdState = { current: false };
+    const onStart = jest.fn();
+    const onStop = jest.fn();
+
+    beginMicrophoneHold(false, holdState, onStart);
+    expect(onStart).not.toHaveBeenCalled();
+
+    beginMicrophoneHold(true, holdState, onStart);
+    expect(holdState.current).toBe(true);
+    expect(onStart).toHaveBeenCalledTimes(1);
+
+    // The release callback can close the hold even when it captured the
+    // pre-listening render where canStop was still false.
+    endMicrophoneHold(false, holdState, onStop);
+    expect(holdState.current).toBe(false);
+    expect(onStop).toHaveBeenCalledTimes(1);
+  });
+
+  it('leaves clue buttons individually accessible instead of grouping the scene', () => {
+    expect(isSceneContainerAccessible(false)).toBe(true);
+    expect(isSceneContainerAccessible(true)).toBe(false);
   });
 
   it('keeps raster switching at the approved 220 ms', () => {

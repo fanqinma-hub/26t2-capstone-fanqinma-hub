@@ -205,8 +205,9 @@ Start first, in parallel with Role 1:
   one Lottie master composition, and cover all five `mascotState` values plus the
   controller-reachable transition paths;
 - record the visual-gate result and select either `lottie-cutout` or
-  `raster-reanimated` behind the same component contract; include a Docker Chrome
-  and one native-target screenshot or short recording in the Role 2 PR checklist;
+  `raster-reanimated` behind the same component contract; record Chrome and one
+  native-target verification in the Role 2 PR checklist, identifying externally
+  shared acceptance evidence when media is not attached to the PR;
 - then import the supplied Activity 3/4/5 assets with stable names,
   source notes, dimensions, and an asset manifest;
 - use the supplied Activity 4 original unchanged and verify its visible pumpkin
