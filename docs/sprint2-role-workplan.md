@@ -56,6 +56,11 @@ The following decisions are closed for Sprint 2:
   idle, listening, speaking, thinking, success, and controller-reachable
   transition paths. Shared bridge clips are allowed; no full state-pair matrix
   is required.
+- Before the full rig is produced, an embedded-raster synthetic probe must pass
+  load, explicit sizing, platform-correct segment playback, interruption, and
+  failure handling in Docker Chrome and one native target. The first actual-size
+  five-state rough recording and its client feedback/approval are recorded
+  before final motion polish.
 - Image-assisted work may separate or inpaint occluded parts, but it must derive
   from the approved artwork rather than independently redesigning body parts.
 - Role 2 owns the visual acceptance gate. If the Lottie result has identity
@@ -83,17 +88,16 @@ The client stack is non-negotiable:
 | Language/routing | TypeScript `~5.9.2`, Expo Router `~6.0.13` |
 | UI/state | React Native Paper `^5.14.5`, React Context API |
 | Audio/storage | Expo AV `^16.0.7`, AsyncStorage `2.2.0` |
-| Animation | Expo 54-compatible `lottie-react-native`; Reanimated fallback |
+| Animation | Expo 54-compatible `lottie-react-native` plus its Web renderer peer; Reanimated fallback |
 | Speech | Azure Speech SDK, current compatible release |
 | Delivery | Docker, Docker Compose, Expo Go, GitHub Actions |
 
-The repository currently uses Expo 56 / RN 0.85 / TypeScript 6 / Router 56, has
-no Paper, AsyncStorage, connected Azure SDK, or Lottie mascot pipeline, and
-contains only an unverified development Docker shell. Role 1 owns alignment to
-the table above. Do not move to Node 22 or `expo-audio`. Supabase JS is excluded
-because Team ALMOND does not build a Supabase connection. Docker pins an exact
-Node 20.19 patch release because Expo SDK 54 requires Node 20.19.x or later
-within the agreed Node 20 line.
+Role 1 has aligned the repository to the Expo 54 / RN 0.81 baseline and owns any
+remaining dependency, Web-export, CI, and Docker corrections. Do not move to
+Node 22 or `expo-audio`. Supabase JS is excluded because Team ALMOND does not
+build a Supabase connection. Docker pins an exact Node 20.19 patch release
+because Expo SDK 54 requires Node 20.19.x or later within the agreed Node 20
+line.
 
 ## 4. Parallel delivery model
 
@@ -104,8 +108,10 @@ All six roles begin in parallel. Nobody waits for a finished downstream feature:
   imports Activities 3–5 and builds UI contracts with fixtures.
 - Roles 3–6 immediately build against shared TypeScript contracts and mocks.
 - Role 1 exclusively edits `package.json` and the lockfile, landing the
-  Expo-compatible Lottie dependency as an early isolated baseline. Role 2 starts
-  the artwork/layer/animation work in parallel and does not edit dependency files.
+  Expo-compatible Lottie dependency, required Web renderer peer, and static Web
+  export smoke as an early isolated baseline. Role 2 starts the artwork and
+  registration work in parallel and does not edit dependency files; it does not
+  continue past the synthetic playback gate until that baseline passes.
 - Role 1 also lands the credential-empty environment template, ignore rules,
   and Docker local-environment wiring early so Role 5 can test live Azure without
   any secret entering Git.
