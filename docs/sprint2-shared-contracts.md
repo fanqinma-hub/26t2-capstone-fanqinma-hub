@@ -178,7 +178,8 @@ export interface LearningUnitDefinition {
 
 Role 2 exports `Readonly<Record<SceneAssetKey, SceneAssetManifestEntry>>`.
 Activity 3/4 use `5:4`; Activity 1/2/5 use `3:2`. Activity 4 points to the
-label-free derivative.
+client original scene (the pumpkin placards read BIG, MEDIUM, and SMALL by
+client decision).
 
 The generic visual shell consumes this adapter only:
 

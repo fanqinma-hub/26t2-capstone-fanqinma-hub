@@ -28,36 +28,11 @@ bytes.
 | ---: | --- | ---: | --- | --- | --- |
 | 3 | `assets/client/scenes/activity-03.png` | 1402×1122 | 5:4, contain | `db26b63dc36d82474f18ec231394013dd5393f5945f629659754d209a6d6d527` | Original bytes preserved |
 | 4 | `assets/client/scenes/activity-04-original.png` | 1402×1122 | 5:4, contain | `c059f8ac339e60f571a2f151ffdd16515d56618ffdd1233fbed579543fe14ea2` | Original bytes preserved |
-| 4 | `assets/client/scenes/activity-04.png` | 1402×1122 | 5:4, contain | `7dae67bae72712600a35ff3a8b844bb901c6d2c85d3b4b900c7662405a0a4ec9` | Label-free local derivative |
 | 5 | `assets/client/scenes/activity-05.png` | 1536×1024 | 3:2, contain | `eff553ba235fa03beb9894afc8da9e9d5924c455bc8bcea2591bf2f2885fee82` | Original bytes preserved |
 
 The 1402×1122 files differ from exact 5:4 by two source pixels. The preview
 uses a 5:4 frame with `contain`, so it neither crops nor stretches the source.
 Activity 5 is exact 3:2.
-
-## Activity 4 localised edit
-
-The original visibly printed `BIG`, `MEDIUM` and `SMALL` on the three pumpkin
-placards, directly revealing the intended answer. The localised derivative
-removes only those three words while keeping the placards and every other
-object, sign and pixel region intact.
-
-- Tool: Codex built-in `image_gen`, precise object edit.
-- Input: `activity-04-original.png`.
-- Exact request: “Remove only the words BIG, MEDIUM, and SMALL from the three
-  small pumpkin placards. Reconstruct the cream paper inside each existing
-  placard so it is blank. Preserve the three placard shapes, borders,
-  positions, perspective, texture and lighting. Do not alter, remove, redraw,
-  crop, relabel or reposition any other object, text, produce, character,
-  background or pixel region. Keep the original 1402×1122 composition.”
-- The generator output is retained only as unsubmitted local working evidence.
-  Its three blank placard interiors were applied to the retained client original
-  through a fixed three-region mask. No generative pixels outside that mask
-  enter the final derivative.
-- Final changed-pixel bounding box: `(170, 799)` to `(980, 879)`; 35,114 pixels
-  changed, all inside the three placard masks.
-- Evidence: `assets/client/scenes/review/activity-04-before-after-diff.png`,
-  `activity-04-diff.png`, and `activity-04-edit-mask.png`.
 
 ## Target visibility and answer leakage
 
@@ -65,7 +40,7 @@ object, sign and pixel region intact.
 | ---: | --- | --- |
 | 2 | gum tree, yellow flower, golden dog, bird | Objects are visible without text labels. Size contrast is instructional visual evidence, not a printed answer. |
 | 3 | teddy bear, toy car, bookshelf | All targets are unobscured and unlabeled. Their deliberately contrasting scale is required by the supplied scene. |
-| 4 | three pumpkins, bananas, grapes | Original pumpkin labels leaked the answer; the derivative removes them. Produce and target geometry remain unobscured. |
+| 4 | three pumpkins, bananas, grapes | The client-approved original is used unchanged. Its `BIG`, `MEDIUM` and `SMALL` pumpkin placards are intentional visible scene content. Produce and target geometry remain unobscured. |
 | 5 | wave, sandcastle, shell, umbrella, crab, rock | All targets are visible and unlabeled. The scene provides visual scale only. |
 
 Normalized focus rectangles, checksums, source notes and descriptive

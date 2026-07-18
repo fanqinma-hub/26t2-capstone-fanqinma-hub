@@ -72,16 +72,16 @@ export const role2DevSceneAssets = {
   'farmers-market': {
     activity: 4,
     key: 'farmers-market',
-    source: require('../../../../assets/client/scenes/activity-04.png'),
-    sourceFile: 'assets/client/scenes/activity-04.png',
+    source: require('../../../../assets/client/scenes/activity-04-original.png'),
+    sourceFile: 'assets/client/scenes/activity-04-original.png',
     aspectRatio: '5:4',
     pixelWidth: 1402,
     pixelHeight: 1122,
-    checksumSha256: '7dae67bae72712600a35ff3a8b844bb901c6d2c85d3b4b900c7662405a0a4ec9',
+    checksumSha256: 'c059f8ac339e60f571a2f151ffdd16515d56618ffdd1233fbed579543fe14ea2',
     accessibilityLabel:
-      'Australian farmers market stall with big, medium, and small pumpkins, a bunch of bananas, and a small bunch of grapes; pumpkin placards are blank.',
+      'Australian farmers market stall with big, medium, and small pumpkins, a bunch of bananas, and a small bunch of grapes; pumpkin placards read BIG, MEDIUM, and SMALL.',
     sourceNote:
-      'Label-free local derivative of the permanently retained client original. Only the three pumpkin placard faces were edited; see assets/client/scenes/review.',
+      'Client-provided Activity 4 scene copied unchanged from the supplied attachment and Excel workbook.',
     focusTargets: [
       { id: 'activity-4:big-pumpkin', label: 'Big pumpkin', objectName: 'big pumpkin', rect: { x: 0.04, y: 0.24, width: 0.343, height: 0.46 } },
       { id: 'activity-4:medium-pumpkin', label: 'Medium pumpkin', objectName: 'medium pumpkin', rect: { x: 0.386, y: 0.4, width: 0.191, height: 0.3 } },

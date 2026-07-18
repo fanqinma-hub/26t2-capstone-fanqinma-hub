@@ -75,7 +75,8 @@ Use this checklist for Sprint 2 integration PRs, the final demo candidate, and p
 
 - [ ] Phone, tablet, and Chrome web layouts were checked.
 - [ ] Both 3:2 and 5:4 scenes were checked.
-- [ ] Activity 4 contains no visible answer labels.
+- [ ] Activity 4 matches the approved client original; its visible pumpkin
+  placards are intentional.
 - [ ] Touch targets and focus states remain usable.
 - [ ] Important images and controls have accessible labels.
 - [ ] Reduced-motion behaviour remains understandable.

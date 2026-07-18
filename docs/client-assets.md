@@ -130,17 +130,16 @@
 ## Sprint 2 Role 2 scene additions
 
 These files were supplied as task attachments and are also embedded in the
-workbook `Team ALMOND TASKS.xlsx`. The original bytes remain available beside
-the one deliberately localised derivative.
+workbook `Team ALMOND TASKS.xlsx`. The repository copies preserve the supplied
+bytes unchanged.
 
 | Supplied filename | Repository filename | Import date | Handling |
 | --- | --- | --- | --- |
 | `image-1.png` | `assets/client/scenes/activity-03.png` | 2026-07-18 | Copied unchanged; bytes preserved. |
 | `image-2.png` | `assets/client/scenes/activity-04-original.png` | 2026-07-18 | Copied unchanged and permanently retained. |
-| `image-2.png` | `assets/client/scenes/activity-04.png` | 2026-07-18 | Local derivative: only the text inside three pumpkin placards was removed. |
 | `image-3.png` | `assets/client/scenes/activity-05.png` | 2026-07-18 | Copied unchanged; bytes preserved. |
 
-The complete checksum, derivative, mask and answer-leakage record is in
+The complete checksum and source record is in
 `docs/role2-scene-asset-provenance.md`.
 
 The supplied FunWattle logos and Kool character reference are documented in

@@ -18,9 +18,9 @@ describe('Role 2 private scene assets', () => {
       [5, '3:2'],
     ]);
     const activity4 = role2DevSceneList.find((scene) => scene.activity === 4);
-    expect(activity4?.sourceFile).toBe('assets/client/scenes/activity-04.png');
+    expect(activity4?.sourceFile).toBe('assets/client/scenes/activity-04-original.png');
     expect(activity4?.checksumSha256).toBe(
-      '7dae67bae72712600a35ff3a8b844bb901c6d2c85d3b4b900c7662405a0a4ec9',
+      'c059f8ac339e60f571a2f151ffdd16515d56618ffdd1233fbed579543fe14ea2',
     );
   });
 
