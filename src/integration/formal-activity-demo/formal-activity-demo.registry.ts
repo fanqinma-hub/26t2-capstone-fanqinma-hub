@@ -1,36 +1,30 @@
 import { activityRouteIds, type ActivityRouteId } from '@/config/app-config';
-import {
-  role2ActivityFlowFixtures,
-  type Role2ActivityFlowFixture,
-} from '@/fixtures/role2-activity-flow.fixture';
+import { formalDemoActivityDefinitions } from './formal-activity-demo.content';
+import type {
+  FormalActivityNumber,
+  FormalDemoActivityDefinition,
+} from './formal-activity-demo.content';
 
-export type FormalActivityNumber = 1 | 2 | 3 | 4 | 5;
+export type { FormalActivityNumber } from './formal-activity-demo.content';
 
 export const formalActivityDemoMode = true as const;
 
 export type FormalActivityDemoEntry = Readonly<{
   routeId: ActivityRouteId;
   activity: FormalActivityNumber;
-  fixture: Role2ActivityFlowFixture;
+  definition: FormalDemoActivityDefinition;
   showsFixtureReward: boolean;
   rewardMessage: string;
 }>;
 
-const fixtureByActivity = new Map(
-  role2ActivityFlowFixtures.map((fixture) => [fixture.activity, fixture]),
-);
-
 function createEntry(routeId: ActivityRouteId): FormalActivityDemoEntry {
   const activity = Number(routeId) as FormalActivityNumber;
-  const fixture = fixtureByActivity.get(activity);
-  if (!fixture) {
-    throw new Error(`Missing formal fixture for Activity ${activity}.`);
-  }
+  const definition = formalDemoActivityDefinitions[activity];
 
   return {
     routeId,
     activity,
-    fixture,
+    definition,
     showsFixtureReward: activity === 1 || activity === 3 || activity === 5,
     rewardMessage: `Activity ${activity} complete. Here is your coin!`,
   };
