@@ -4,9 +4,9 @@ import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
 import { role2DevActivityFixtures } from '@/fixtures/role2-activity-scenes.fixture';
 import { SemanticColors, Spacing, Typography } from '@/theme';
 
-import { role2DevSceneAssets, type Role2DevNormalizedRect } from './role2-scene-manifest';
+import { SceneSpotlightOverlay } from '../SceneInteractionOverlay';
+import { role2DevSceneAssets } from './role2-scene-manifest';
 import {
-  buildSpotlightDimRegions,
   getSpotlightFrameRects,
   getSpotlightPhaseCount,
   resolveSpotlightPresentation,
@@ -14,19 +14,6 @@ import {
 
 const MIN_VISIBLE_STATE_MS = 1800;
 const SEQUENTIAL_SPOTLIGHT_MS = 1600;
-
-function percent(value: number): `${number}%` {
-  return `${value * 100}%`;
-}
-
-function rectStyle(rect: Role2DevNormalizedRect) {
-  return {
-    height: percent(rect.height),
-    left: percent(rect.x),
-    top: percent(rect.y),
-    width: percent(rect.width),
-  } as const;
-}
 
 function BeachSpotlightQa() {
   const scene = role2DevSceneAssets['beach-day'];
@@ -48,10 +35,6 @@ function BeachSpotlightQa() {
   const visibleRects = useMemo(
     () => getSpotlightFrameRects(presentation, phaseIndex),
     [phaseIndex, presentation],
-  );
-  const dimRegions = useMemo(
-    () => buildSpotlightDimRegions(visibleRects),
-    [visibleRects],
   );
   const phaseLabels = ['Wave', 'Sandcastle', 'Umbrella', 'Combined summary'] as const;
 
@@ -88,12 +71,7 @@ function BeachSpotlightQa() {
         accessible
         style={[styles.scene, { aspectRatio: 3 / 2 }]}>
         <Image accessible={false} resizeMode="contain" source={scene.source} style={styles.sceneImage} />
-        {dimRegions.map((region, index) => (
-          <View key={`qa-dim-${index}`} style={[styles.dim, rectStyle(region)]} />
-        ))}
-        {visibleRects.map((rect, index) => (
-          <View key={`qa-highlight-${phaseIndex}-${index}`} style={[styles.highlight, rectStyle(rect)]} />
-        ))}
+        <SceneSpotlightOverlay rects={visibleRects} sceneSource={scene.source} />
       </View>
       <View style={styles.controls}>
         <Pressable
@@ -146,10 +124,6 @@ export function Role2SceneDemo() {
       Math.max(0, getSpotlightPhaseCount(spotlightPresentation) - 1),
     ),
     [spotlightPresentation],
-  );
-  const dimRegions = useMemo(
-    () => buildSpotlightDimRegions(visibleSpotlightRects),
-    [visibleSpotlightRects],
   );
 
   const advance = useCallback(() => {
@@ -233,12 +207,7 @@ export function Role2SceneDemo() {
         accessible
         style={[styles.scene, { aspectRatio: scene.aspectRatio === '5:4' ? 5 / 4 : 3 / 2 }]}>
         <Image accessible={false} resizeMode="contain" source={scene.source} style={styles.sceneImage} />
-        {dimRegions.map((region, index) => (
-          <View key={`dim-${index}`} style={[styles.dim, rectStyle(region)]} />
-        ))}
-        {visibleSpotlightRects.map((rect, index) => (
-          <View key={`highlight-${spotlightPresentation.mode}-${index}`} style={[styles.highlight, rectStyle(rect)]} />
-        ))}
+        <SceneSpotlightOverlay rects={visibleSpotlightRects} sceneSource={scene.source} />
       </View>
 
       <View style={styles.controls}>
@@ -269,8 +238,6 @@ const styles = StyleSheet.create({
   status: { ...Typography.bodySmall, color: SemanticColors.secondaryText },
   scene: { alignSelf: 'center', backgroundColor: SemanticColors.surface, maxWidth: 760, overflow: 'hidden', width: '100%' },
   sceneImage: { ...StyleSheet.absoluteFillObject, height: '100%', width: '100%' },
-  dim: { backgroundColor: 'rgba(24, 16, 24, 0.62)', pointerEvents: 'none', position: 'absolute' },
-  highlight: { borderColor: '#FDD652', borderRadius: 12, borderWidth: 4, pointerEvents: 'none', position: 'absolute' },
   controls: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.one },
   button: { backgroundColor: SemanticColors.surfaceAccent, borderRadius: 12, paddingHorizontal: Spacing.two, paddingVertical: Spacing.one },
   buttonActive: { borderColor: SemanticColors.focus, borderWidth: 2 },

@@ -1,14 +1,13 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Image, Pressable, ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
-import type { DimensionValue, LayoutChangeEvent } from 'react-native';
-import Animated, { cancelAnimation, useAnimatedStyle, useReducedMotion, useSharedValue, withRepeat, withSequence, withTiming } from 'react-native-reanimated';
+import type { LayoutChangeEvent } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { KoolDialogue, KoolMascot, type KoolDialogueVariant, type KoolMascotState, MicrophoneButton, ProgressIndicator } from '@/components/child-ui';
-import { BrandColors, clamp, ComponentSizes, isTablet, moderateScale, Radii, scale, SemanticColors, Spacing, Typography } from '@/theme';
+import { BrandColors, clamp, ComponentSizes, isTablet, moderateScale, Radii, SemanticColors, Spacing, Typography } from '@/theme';
 
-import type { ActivityHotspot, ActivityScreenProps, ActivityScreenVisualState } from './types';
-import { buildSpotlightDimRegions } from './spotlight-geometry';
+import { ClueHotspot, SceneSpotlightOverlay } from './SceneInteractionOverlay';
+import type { ActivityScreenProps, ActivityScreenVisualState } from './types';
 
 export type ActivityScreenVisualStatePresentation = {
   dialogueVariant?: KoolDialogueVariant;
@@ -46,11 +45,6 @@ const mascotByVisualState: Record<ActivityScreenVisualState, KoolMascotState> = 
   complete: 'success',
   error: 'retry',
 };
-
-function toPercentage(value: number): DimensionValue {
-  const safeValue = Number.isFinite(value) ? Math.min(Math.max(value, 0), 1) : 0;
-  return `${safeValue * 100}%` as DimensionValue;
-}
 
 const sceneAspectRatio = 1.5;
 
@@ -111,121 +105,6 @@ function fitScene(area: { width: number; height: number }, maxHeight: number) {
   return { width: frameWidth, height: frameWidth / sceneAspectRatio };
 }
 
-function HotspotOverlay({ hotspot, onPress }: { hotspot: ActivityHotspot; onPress: () => void }) {
-  // Large objects (watermelon, pot) show the marker on their centre; small
-  // objects (strawberry, teacup) show it just below so it never covers them.
-  const isSmallObject = hotspot.width < 0.18 || hotspot.height < 0.2;
-  const left = toPercentage(hotspot.x + hotspot.width / 2);
-  const top = isSmallObject
-    ? toPercentage(Math.min(hotspot.y + hotspot.height + 0.05, 0.94))
-    : toPercentage(hotspot.y + hotspot.height / 2);
-  const systemReducedMotion = useReducedMotion();
-  const pulse = useSharedValue(1);
-  const animatedStyle = useAnimatedStyle(() => ({
-    opacity: pulse.value,
-    transform: [
-      { translateX: -hotspotSize / 2 },
-      { translateY: -hotspotSize / 2 },
-      { scale: 0.96 + pulse.value * 0.04 },
-    ],
-  }));
-
-  useEffect(() => {
-    cancelAnimation(pulse);
-    pulse.set(1);
-
-    if (systemReducedMotion) return () => undefined;
-
-    pulse.set(withRepeat(
-      withSequence(
-        withTiming(0.72, { duration: 1100 }),
-        withTiming(1, { duration: 1100 }),
-      ),
-      -1,
-    ));
-
-    return () => cancelAnimation(pulse);
-  }, [pulse, systemReducedMotion]);
-
-  return (
-    <Animated.View style={[styles.hotspot, { left, top }, animatedStyle]}>
-      <Pressable
-        accessibilityHint="Double tap to ask Kool for a clue about this part of the picture."
-        accessibilityLabel={`Picture clue: ${hotspot.label}`}
-        accessibilityRole="button"
-        hitSlop={12}
-        onPress={onPress}
-        style={({ pressed }) => [styles.hotspotButton, pressed && styles.hotspotPressed]}>
-        <Text style={styles.hotspotQuestion}>?</Text>
-      </Pressable>
-    </Animated.View>
-  );
-}
-
-function HighlightedObject({ hotspot }: { hotspot: ActivityHotspot }) {
-  const systemReducedMotion = useReducedMotion();
-  const pulse = useSharedValue(1);
-  const dimRegions = useMemo(
-    () => buildSpotlightDimRegions([hotspot]),
-    [hotspot],
-  );
-  const animatedStyle = useAnimatedStyle(() => ({
-    opacity: 0.45 + pulse.value * 0.55,
-    transform: [{ scale: 0.98 + pulse.value * 0.04 }],
-  }));
-
-  useEffect(() => {
-    cancelAnimation(pulse);
-    pulse.set(1);
-
-    if (systemReducedMotion) return () => undefined;
-
-    // Same breathing rhythm as the question-mark hotspot so the highlighted
-    // object reads as "this is the one Kool means".
-    pulse.set(withRepeat(
-      withSequence(
-        withTiming(0.4, { duration: 1100 }),
-        withTiming(1, { duration: 1100 }),
-      ),
-      -1,
-    ));
-
-    return () => cancelAnimation(pulse);
-  }, [pulse, systemReducedMotion]);
-
-  return (
-    <>
-      {dimRegions.map((region, index) => (
-        <View
-          key={`spotlight-dim-${index}`}
-          style={[
-            styles.sceneDim,
-            {
-              height: toPercentage(region.height),
-              left: toPercentage(region.x),
-              top: toPercentage(region.y),
-              width: toPercentage(region.width),
-            },
-          ]}
-        />
-      ))}
-      <Animated.View
-        pointerEvents="none"
-        style={[
-          styles.objectHighlight,
-          {
-            height: toPercentage(hotspot.height),
-            left: toPercentage(hotspot.x),
-            top: toPercentage(hotspot.y),
-            width: toPercentage(hotspot.width),
-          },
-          animatedStyle,
-        ]}
-      />
-    </>
-  );
-}
-
 export function ActivityScreen({
   activityId,
   title,
@@ -282,6 +161,11 @@ export function ActivityScreen({
   // Skip is a secondary "keep the demo moving" escape; hide it once the child
   // has succeeded or the activity is over.
   const showSkip = Boolean(onSkipPress) && visualState !== 'success' && !isComplete;
+  const spotlightHotspots = activeHotspotId
+    ? hotspots?.filter((hotspot) => hotspot.id === activeHotspotId) ?? []
+    : showHotspots
+      ? hotspots ?? []
+      : [];
 
   return (
     <SafeAreaView style={styles.screen}>
@@ -312,6 +196,17 @@ export function ActivityScreen({
                 style={[styles.title, !isTablet && styles.titleCompact, layout.compactPhone && styles.titleMicro]}>
                 {headingTitle}
               </Text>
+              {showSkip ? (
+                <Pressable
+                  accessibilityHint="Move on to the next question without answering."
+                  accessibilityLabel="Skip this question"
+                  accessibilityRole="button"
+                  hitSlop={8}
+                  onPress={onSkipPress}
+                  style={({ pressed }) => [styles.headerSkipButton, pressed && styles.skipButtonPressed]}>
+                  <Text style={styles.headerSkipButtonText}>Skip ›</Text>
+                </Pressable>
+              ) : null}
             </View>
             <ProgressIndicator currentActivity={currentActivity} showLabel={false} totalActivities={totalActivities} />
           </View>
@@ -321,13 +216,22 @@ export function ActivityScreen({
               accessibilityLabel={`${activityTitle} picture`}
               style={[styles.sceneFrame, { height: sceneFit.height, width: sceneFit.width }]}>
               <Image accessible accessibilityLabel={`${activityTitle} scene`} resizeMode="cover" source={sceneSource} style={styles.sceneImage} />
-              {activeHotspotId
-                ? hotspots?.filter((hotspot) => hotspot.id === activeHotspotId).map((hotspot) => <HighlightedObject hotspot={hotspot} key={hotspot.id} />)
-                : null}
+              {spotlightHotspots.length > 0 ? (
+                <SceneSpotlightOverlay
+                  rects={spotlightHotspots}
+                  sceneSource={sceneSource}
+                  showFrames={!showHotspots}
+                />
+              ) : null}
               {showHotspots ? (
                 <View style={styles.hotspotLayer}>
                   {hotspots?.map((hotspot) => (
-                    <HotspotOverlay key={hotspot.id} hotspot={hotspot} onPress={() => onHotspotPress?.(hotspot.id)} />
+                    <ClueHotspot
+                      key={hotspot.id}
+                      label={hotspot.label}
+                      onPress={() => onHotspotPress?.(hotspot.id)}
+                      rect={hotspot}
+                    />
                   ))}
                 </View>
               ) : null}
@@ -353,15 +257,6 @@ export function ActivityScreen({
                 </Text>
               </View>
             ) : null}
-            {statusLine ? (
-              <Text
-                accessibilityLiveRegion="polite"
-                numberOfLines={layout.compactPhone ? 2 : 1}
-                style={[styles.statusLine, layout.compactPhone && styles.statusLineCompact]}>
-                {statusLine}
-              </Text>
-            ) : null}
-
             <View style={[styles.mascotMicRow, { minHeight: layout.dockHeight }]}>
               <KoolMascot isSpeaking={isKoolSpeaking} size={mascotSize} state={resolvedMascotState} />
               {showMicrophone ? (
@@ -381,18 +276,6 @@ export function ActivityScreen({
               <Pressable accessibilityRole="button" onPress={onCompletePress} style={styles.completeButton}>
                 <Text style={styles.completeButtonText}>{completeActionLabel}</Text>
               </Pressable>
-            ) : showSkip ? (
-              <View style={styles.skipRow}>
-                <Pressable
-                  accessibilityHint="Move on to the next question without answering."
-                  accessibilityLabel="Skip this question"
-                  accessibilityRole="button"
-                  hitSlop={8}
-                  onPress={onSkipPress}
-                  style={({ pressed }) => [styles.skipButton, pressed && styles.skipButtonPressed]}>
-                  <Text style={styles.skipButtonText}>Skip ›</Text>
-                </Pressable>
-              </View>
             ) : null}
           </View>
         </View>
@@ -410,7 +293,6 @@ export function ActivityScreen({
   );
 }
 
-const hotspotSize = scale(40);
 const styles = StyleSheet.create({
   screen: {
     backgroundColor: SemanticColors.background,
@@ -447,23 +329,22 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.three,
     paddingVertical: Spacing.one,
   },
-  skipRow: {
-    alignItems: 'flex-end',
-  },
-  skipButton: {
+  headerSkipButton: {
+    alignItems: 'center',
     backgroundColor: SemanticColors.surface,
-    borderColor: BrandColors.pewter,
+    borderColor: BrandColors.marsala,
     borderRadius: Radii.pill,
-    borderWidth: 1,
-    paddingHorizontal: Spacing.three,
-    paddingVertical: Spacing.one,
+    borderWidth: 2,
+    height: 40,
+    justifyContent: 'center',
+    paddingHorizontal: Spacing.two,
   },
   skipButtonPressed: {
     opacity: 0.7,
   },
-  skipButtonText: {
-    ...Typography.label,
-    color: SemanticColors.secondaryText,
+  headerSkipButtonText: {
+    ...Typography.bodySmall,
+    color: SemanticColors.primaryText,
   },
   devOverlay: {
     backgroundColor: SemanticColors.background,
@@ -534,56 +415,10 @@ const styles = StyleSheet.create({
     pointerEvents: 'box-none',
     zIndex: 2,
   },
-  hotspot: {
-    alignItems: 'center',
-    height: hotspotSize,
-    justifyContent: 'center',
-    position: 'absolute',
-    width: hotspotSize,
-  },
-  hotspotButton: {
-    alignItems: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.82)',
-    borderColor: '#1F1A17',
-    borderRadius: Radii.pill,
-    borderWidth: 3,
-    height: '100%',
-    justifyContent: 'center',
-    width: '100%',
-  },
-  hotspotPressed: {
-    opacity: 0.6,
-  },
-  hotspotQuestion: {
-    ...Typography.headingSmall,
-    color: '#1F1A17',
-  },
-  objectHighlight: {
-    borderColor: BrandColors.mimosa,
-    borderRadius: Radii.medium,
-    borderWidth: 4,
-    position: 'absolute',
-    zIndex: 3,
-  },
-  sceneDim: {
-    backgroundColor: 'rgba(24, 16, 24, 0.62)',
-    pointerEvents: 'none',
-    position: 'absolute',
-    zIndex: 2,
-  },
   mascotMicRow: {
     alignItems: 'flex-end',
     flexDirection: 'row',
     justifyContent: 'space-between',
-  },
-  statusLine: {
-    ...Typography.label,
-    color: SemanticColors.secondaryText,
-    textAlign: 'center',
-  },
-  statusLineCompact: {
-    fontSize: moderateScale(17),
-    lineHeight: moderateScale(22),
   },
   completeButton: {
     alignItems: 'center',
