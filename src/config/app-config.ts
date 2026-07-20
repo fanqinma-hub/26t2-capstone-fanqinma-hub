@@ -6,6 +6,7 @@ export const appRoutes = {
   home: '/' as const,
   report: '/report' as const,
   reportFromActivityComplete: '/report?from=activityComplete' as const,
+  unitComplete: '/unit-complete' as const,
   activity: (activityId: ActivityRouteId) => `/activity/${activityId}` as const,
 };
 

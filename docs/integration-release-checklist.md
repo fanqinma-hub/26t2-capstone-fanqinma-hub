@@ -45,6 +45,12 @@ Use this checklist for Sprint 2 integration PRs, the final demo candidate, and p
 - [ ] Pages consume `appRoutes`.
 - [ ] Routes contain no scoring, reward, report, or animation policy.
 - [ ] Cross-role imports use canonical public exports.
+- [ ] The formal fixture demo uses an explicit replaceable adapter and imports
+  no dev-only components, `ui-preview`, or QA controls.
+- [ ] Home -> Activity 1 -> 2 -> 3 -> 4 -> 5 -> Unit Complete works without
+  entering the Report prototype.
+- [ ] The temporary Sprint 1 reward card appears only after Activities 1, 3,
+  and 5 and performs no grant or session-total mutation.
 
 ## 5. Docker acceptance
 
@@ -70,6 +76,8 @@ Use this checklist for Sprint 2 integration PRs, the final demo candidate, and p
 - [ ] Screen and exported report values match.
 - [ ] Mock data is distinguishable from live-session data.
 - [ ] No backend, authentication, Supabase connection, or LLM was introduced.
+- [ ] Role 1 reviewed the temporary route integration and Role 6 reviewed the
+  narrowly scoped legacy reward-card extraction before merge.
 
 ## 7. Visual and accessibility evidence
 

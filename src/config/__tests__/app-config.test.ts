@@ -11,6 +11,7 @@ describe('Role 1 route and runtime configuration smoke test', () => {
     expect(appRoutes.reportFromActivityComplete).toBe(
       '/report?from=activityComplete',
     );
+    expect(appRoutes.unitComplete).toBe('/unit-complete');
   });
 
   it('builds one generic route for each activity', () => {

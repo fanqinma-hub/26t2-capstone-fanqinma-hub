@@ -16,6 +16,7 @@ import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { SessionProvider } from '@/session';
+import { FormalActivityDemoProvider } from '@/integration/formal-activity-demo';
 import { SemanticColors, Spacing, Typography } from '@/theme';
 
 void SplashScreen.preventAutoHideAsync();
@@ -57,7 +58,9 @@ export default function RootLayout() {
   return (
     <SafeAreaProvider>
       <SessionProvider>
-        <Slot />
+        <FormalActivityDemoProvider>
+          <Slot />
+        </FormalActivityDemoProvider>
       </SessionProvider>
     </SafeAreaProvider>
   );

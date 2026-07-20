@@ -11,7 +11,7 @@ import {
   ProgressIndicator,
 } from '@/components/child-ui';
 import { MascotAnimator } from '@/components/mascot';
-import { BrandColors, clamp, ComponentSizes, Radii, SemanticColors, Spacing, Typography } from '@/theme';
+import { BrandColors, ComponentSizes, Radii, SemanticColors, Spacing, Typography } from '@/theme';
 import type {
   ActivityScreenActions,
   ActivityScreenViewModel,
@@ -31,41 +31,16 @@ import {
   isSceneContainerAccessible,
 } from './activity-presentation-interactions';
 import { ClueHotspot, SceneSpotlightOverlay } from './SceneInteractionOverlay';
+import {
+  getFluidLayout,
+  getPortraitMascotVisualHeight,
+} from './activity-presentation-layout';
 
 export type ActivityPresentationScreenProps = Readonly<{
   viewModel: ActivityScreenViewModel;
   actions: ActivityScreenActions;
   scene: SceneAssetManifestEntry;
 }>;
-
-/**
- * Continuous responsive layout: every dimension is a clamped function of the
- * viewport, so neighbouring window sizes always produce neighbouring layouts
- * (no stepped breakpoints). The only discrete switch is the column-vs-row
- * arrangement for desktop and landscape-phone shapes.
- */
-export function getFluidLayout(width: number, height: number) {
-  const horizontal = width >= 960 || (height <= 560 && width >= 640);
-  return {
-    horizontal,
-    compactTitle: width <= 430,
-    compactDialogue: width <= 430 || (!horizontal && height <= 780),
-    /**
-     * The label costs ~38px of dock height. On very short portrait viewports
-     * that space is better spent on the scene; the touch target is unaffected.
-     */
-    showMicLabel: horizontal || height >= 620,
-    gap: clamp(Math.round(height * 0.014), 6, 14),
-    pagePaddingH: clamp(Math.round(width * 0.035), 12, 28),
-    pagePaddingV: clamp(Math.round(height * 0.016), 8, 20),
-    /** Upper bound on the dialogue-to-dock breathing gap. */
-    breatheMax: clamp(Math.round(height * 0.03), 6, 24),
-    sceneMaxHeight: clamp(height * 0.46, 200, 620),
-    mascotVisualHeight: clamp(Math.round(height * 0.19), 104, 232),
-    micVisualSize: clamp(Math.round(height * 0.15), 84, 156),
-    contentMaxWidth: horizontal ? 1440 : 820,
-  };
-}
 
 function ActionButton({
   compact = false,
@@ -167,6 +142,28 @@ export function ActivityPresentationScreen({ viewModel, actions, scene }: Activi
   const sceneAspectRatio = viewModel.sceneAspectRatio === '5:4' ? 5 / 4 : 3 / 2;
   const [sceneArea, setSceneArea] = useState({ width: 0, height: 0 });
   const microphoneHoldActive = useRef(false);
+  const [portraitMeasurements, setPortraitMeasurements] = useState({
+    dialogueHeight: 0,
+    headerHeight: 0,
+    pageHeight: 0,
+  });
+  const portraitSceneWidth = Math.min(
+    width - fluid.pagePaddingH * 2,
+    fluid.contentMaxWidth,
+    fluid.sceneMaxHeight * sceneAspectRatio,
+  );
+  const portraitSceneHeight = portraitSceneWidth / sceneAspectRatio;
+  const mascotVisualHeight = fluid.horizontal
+    ? fluid.mascotVisualHeight
+    : getPortraitMascotVisualHeight({
+        desiredHeight: fluid.mascotVisualHeight,
+        dialogueHeight: portraitMeasurements.dialogueHeight,
+        gap: fluid.gap,
+        headerHeight: portraitMeasurements.headerHeight,
+        pageHeight: portraitMeasurements.pageHeight,
+        pagePaddingV: fluid.pagePaddingV,
+        sceneHeight: portraitSceneHeight,
+      });
   const fittedSceneWidth = useMemo(() => {
     const fitted = fitSceneFrameWidth(sceneArea, sceneAspectRatio);
     return Math.min(fitted, fluid.sceneMaxHeight * sceneAspectRatio);
@@ -180,13 +177,23 @@ export function ActivityPresentationScreen({ viewModel, actions, scene }: Activi
         : { width: areaWidth, height: areaHeight },
     );
   };
+  const measurePortraitPart = (
+    key: keyof typeof portraitMeasurements,
+    value: number,
+  ) => {
+    setPortraitMeasurements((previous) =>
+      Math.abs(previous[key] - value) < 0.5
+        ? previous
+        : { ...previous, [key]: value },
+    );
+  };
 
   // Align the centre of the visible microphone badge with Kool's neckline.
   // Both boxes are visual boxes (see VisualArtwork), so this is pure geometry:
   // the row bottom-aligns Kool's feet and the button's bottom edge, the badge
   // centre sits `labelBlock + badge/2` above the button bottom, and the neck
   // sits `visualHeight * (1 - MASCOT_NECK_RATIO)` above the feet.
-  const neckFromRowBottom = fluid.mascotVisualHeight * (1 - MASCOT_NECK_RATIO);
+  const neckFromRowBottom = mascotVisualHeight * (1 - MASCOT_NECK_RATIO);
   const micCenterFromBottom = getMicrophoneVisualCenterFromBottom(fluid.micVisualSize, fluid.showMicLabel);
   const micLift = Math.max(0, Math.round(neckFromRowBottom - micCenterFromBottom));
 
@@ -203,7 +210,11 @@ export function ActivityPresentationScreen({ viewModel, actions, scene }: Activi
   };
 
   const header = (
-    <View style={styles.header}>
+    <View
+      onLayout={fluid.horizontal
+        ? undefined
+        : (event) => measurePortraitPart('headerHeight', event.nativeEvent.layout.height)}
+      style={styles.header}>
       <View style={styles.headerActions}>
         <View style={styles.headerPrimaryActions}>
           <ActionButton compact disabled={!viewModel.canBack} label="‹ Back" onPress={actions.onBack} />
@@ -225,12 +236,17 @@ export function ActivityPresentationScreen({ viewModel, actions, scene }: Activi
   );
 
   const dialogue = (
-    <KoolDialogue
-      message={viewModel.koolMessage}
-      size={fluid.compactDialogue ? 'compact' : 'default'}
-      trailingLabel={questionLabel}
-      variant={viewModel.visualState === 'gentleCue' || viewModel.visualState === 'reprompt' || viewModel.visualState === 'error' ? 'gentle' : 'prompt'}
-    />
+    <View
+      onLayout={fluid.horizontal
+        ? undefined
+        : (event) => measurePortraitPart('dialogueHeight', event.nativeEvent.layout.height)}>
+      <KoolDialogue
+        message={viewModel.koolMessage}
+        size={fluid.compactDialogue ? 'compact' : 'default'}
+        trailingLabel={questionLabel}
+        variant={viewModel.visualState === 'gentleCue' || viewModel.visualState === 'reprompt' || viewModel.visualState === 'error' ? 'gentle' : 'prompt'}
+      />
+    </View>
   );
 
   const dock = (
@@ -240,7 +256,7 @@ export function ActivityPresentationScreen({ viewModel, actions, scene }: Activi
         celebrationIntensity={viewModel.celebrationIntensity}
         reducedMotion={reducedMotion}
         state={viewModel.mascotState}
-        visualHeight={fluid.mascotVisualHeight}
+        visualHeight={mascotVisualHeight}
       />
       <View style={[styles.micSlot, { marginBottom: micLift, minWidth: fluid.micVisualSize }]}>
         {viewModel.canContinue ? (
@@ -261,14 +277,16 @@ export function ActivityPresentationScreen({ viewModel, actions, scene }: Activi
     </View>
   );
 
-  // Vertical slack has exactly one owner. Portrait: the scene area is the only
-  // flexible slot; the picture bottom-anchors against the dialogue, so any
-  // leftover height floats above the picture, while the dialogue-to-dock gap
-  // stays bounded by the capped breathe spacer. No ScrollView: short viewports
-  // shrink the picture instead of pushing the dock off screen.
+  // Portrait top-packs header, scene and dialogue. The only flexible slack sits
+  // before the bottom-anchored dock, and Kool may grow upward only within the
+  // measured remainder. No ScrollView: short viewports cap artwork instead of
+  // pushing the dock off screen.
   return (
     <View style={styles.screen}>
       <View
+        onLayout={fluid.horizontal
+          ? undefined
+          : (event) => measurePortraitPart('pageHeight', event.nativeEvent.layout.height)}
         style={[
           styles.page,
           {
@@ -300,16 +318,16 @@ export function ActivityPresentationScreen({ viewModel, actions, scene }: Activi
           </View>
         ) : (
           <>
-            <View onLayout={onSceneAreaLayout} style={styles.sceneArea}>
+            <View style={styles.sceneAreaPortrait}>
               <SceneSpotlight
                 actions={actions}
                 scene={scene}
-                sceneWidth={fittedSceneWidth || undefined}
+                sceneWidth={portraitSceneWidth}
                 viewModel={viewModel}
               />
             </View>
             {dialogue}
-            <View style={{ flexGrow: 1, maxHeight: fluid.breatheMax }} />
+            <View style={styles.portraitDockSpacer} />
             {dock}
           </>
         )}
@@ -358,12 +376,8 @@ const styles = StyleSheet.create({
     minHeight: 0,
     width: '100%',
   },
-  sceneArea: {
+  sceneAreaPortrait: {
     alignItems: 'center',
-    flexGrow: 1,
-    flexShrink: 1,
-    justifyContent: 'flex-end',
-    minHeight: 120,
     minWidth: 0,
     width: '100%',
   },
@@ -403,6 +417,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-around',
     width: '100%',
+  },
+  portraitDockSpacer: {
+    flexGrow: 1,
+    minHeight: 0,
   },
   micSlot: {
     alignItems: 'center',

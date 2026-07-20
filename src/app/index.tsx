@@ -1,4 +1,5 @@
 import { useRouter } from 'expo-router';
+import { useCallback } from 'react';
 import { Image, Pressable, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -6,6 +7,10 @@ import { KoolMascot } from '@/components/child-ui';
 import { appRoutes } from '@/config/app-config';
 import { brandAssets } from '@/constants/brand-assets';
 import { clientUiAssets } from '@/constants/client-assets';
+import {
+  formalActivityDemoMode,
+  useFormalActivityDemoSession,
+} from '@/integration/formal-activity-demo';
 import { BrandColors, clamp, ComponentSizes, isSmallPhone, Radii, SemanticColors, Spacing, Typography } from '@/theme';
 
 function getHomeLayout(width: number, height: number) {
@@ -38,8 +43,13 @@ function getHomeLayout(width: number, height: number) {
 
 export default function HomeScreen() {
   const router = useRouter();
+  const { resetDemo } = useFormalActivityDemoSession();
   const { width, height } = useWindowDimensions();
   const layout = getHomeLayout(width, height);
+  const handleStart = useCallback(() => {
+    resetDemo();
+    router.push(appRoutes.activity('1'));
+  }, [resetDemo, router]);
 
   return (
     <SafeAreaView style={styles.screen}>
@@ -98,7 +108,7 @@ export default function HomeScreen() {
           <View style={{ gap: layout.cardGap }}>
             <Pressable
               accessibilityRole="button"
-              onPress={() => router.push(appRoutes.activity('1'))}
+              onPress={handleStart}
               style={({ pressed }) => [
                 styles.primaryButton,
                 { minHeight: layout.buttonHeight },
@@ -107,16 +117,18 @@ export default function HomeScreen() {
               <Text style={styles.primaryButtonText}>Start activity</Text>
             </Pressable>
 
-            <Pressable
-              accessibilityRole="button"
-              onPress={() => router.push(appRoutes.report)}
-              style={({ pressed }) => [
-                styles.secondaryButton,
-                { minHeight: layout.buttonHeight },
-                pressed && styles.pressed,
-              ]}>
-              <Text style={styles.secondaryButtonText}>View report</Text>
-            </Pressable>
+            {!formalActivityDemoMode ? (
+              <Pressable
+                accessibilityRole="button"
+                onPress={() => router.push(appRoutes.report)}
+                style={({ pressed }) => [
+                  styles.secondaryButton,
+                  { minHeight: layout.buttonHeight },
+                  pressed && styles.pressed,
+                ]}>
+                <Text style={styles.secondaryButtonText}>View report</Text>
+              </Pressable>
+            ) : null}
           </View>
         </View>
 
