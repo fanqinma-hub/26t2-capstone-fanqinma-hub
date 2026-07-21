@@ -1,6 +1,22 @@
-import type { ImageSourcePropType } from 'react-native';
+import type { FocusTargetId, SceneAssetKey } from './visual.types';
 
-export type TargetAdjective = 'big' | 'small' | 'tiny' | 'huge' | 'gigantic' | 'medium';
+export type ActivityId =
+  | 'activity-1'
+  | 'activity-2'
+  | 'activity-3'
+  | 'activity-4'
+  | 'activity-5';
+
+/** Prompt IDs are globally unique because they include their owning activity. */
+export type PromptId = `${ActivityId}:${string}`;
+
+export type TargetAdjective =
+  | 'big'
+  | 'small'
+  | 'tiny'
+  | 'huge'
+  | 'gigantic'
+  | 'medium';
 
 export type SizeWordKeyword =
   | TargetAdjective
@@ -10,88 +26,58 @@ export type SizeWordKeyword =
   | 'enormous'
   | 'teeny';
 
-export type ResponseTier = 'noun_only' | 'adjective_used' | 'rich_description';
+export type ResponseTier =
+  | 'noun_only'
+  | 'adjective_used'
+  | 'rich_description';
 
-export type AcceptedResponseExamples = {
-  minimum: readonly string[];
-  target: readonly string[];
-  bonus: readonly string[];
-};
+export type RewardCheckpointId =
+  | 'coin-after-activity-1'
+  | 'coin-after-activity-3'
+  | 'coin-after-activity-5';
 
-export type ActivityHotspotDefinition = {
-  id: string;
-  label: string;
-  objectName: string;
-  /** Normalized scene coordinates from 0 to 1. */
-  x: number;
-  y: number;
-  width: number;
-  height: number;
-  helpPrompt: string;
-};
+export interface AcceptedResponseExamples {
+  tier1: readonly string[];
+  tier2: readonly string[];
+  tier3: readonly string[];
+}
 
-export type ActivityPromptDefinition = {
-  id: string;
+export interface ActivityPromptDefinition {
+  id: PromptId;
   sequence: number;
-  koolPrompt: string;
-  expectedNouns: readonly string[];
-  targetAdjectives: readonly TargetAdjective[];
-  acceptedResponses: AcceptedResponseExamples;
+  kind: 'open';
+  promptText: string;
+  repromptText: string;
+  helpText: string;
   recastText: string;
-  helpPrompt: string;
-  hotspotId?: string;
-  acceptsAnyResponse?: boolean;
-};
+  targetAdjectives: readonly TargetAdjective[];
+  expectedNouns: readonly string[];
+  nounAliases: readonly string[];
+  focusTargetIds: readonly FocusTargetId[];
+  readinessEligible: boolean;
+  acceptedExamples: AcceptedResponseExamples;
+}
 
-export type ActivityScriptExchange = {
-  id: string;
+export interface ActivityDefinition {
+  id: ActivityId;
+  order: 1 | 2 | 3 | 4 | 5;
   title: string;
-  approximateDurationSeconds: number;
-  promptIds: readonly string[];
-};
-
-export type ActivityRewardCheckpoint = {
-  id: string;
-  kind: 'coin';
-  afterPromptId: string;
-  koolMessage: string;
-};
-
-export type ActivityDefinition = {
-  id: string;
-  slug: string;
-  order: number;
-  title: string;
-  scene: {
-    assetKey: string;
-    source: ImageSourcePropType;
-    accessibilityLabel: string;
-  };
+  sceneAssetKey: SceneAssetKey;
   runtimeSeconds: number;
   targetAdjectives: readonly TargetAdjective[];
   teachingTechnique: string;
-  introMessage: string;
-  exchanges: readonly ActivityScriptExchange[];
+  introText: string;
   prompts: readonly ActivityPromptDefinition[];
-  hotspots: readonly ActivityHotspotDefinition[];
-  rewardCheckpoint?: ActivityRewardCheckpoint;
-  clinicalNote: string;
-};
+  rewardCheckpointId?: RewardCheckpointId;
+}
 
-export type LearningUnitDefinition = {
-  id: string;
-  version: string;
-  title: string;
+export interface LearningUnitDefinition {
+  id: 'size-words-unit';
+  contentVersion: string;
+  title: 'Big, Small and Everything in Between!';
   type: 'expressive_language';
-  targetAge: {
-    minimum: number;
-    maximum: number;
-  };
-  targetAdjectives: readonly TargetAdjective[];
-  totalActivities: number;
-  expectedRuntimeMinutes: {
-    minimum: number;
-    maximum: number;
-  };
+  targetAge: { minimum: 6; maximum: 8 };
+  expectedRuntimeMinutes: { minimum: 5; maximum: 10 };
+  primaryWords: readonly ['big', 'small', 'tiny', 'huge', 'gigantic', 'medium'];
   activities: readonly ActivityDefinition[];
-};
+}

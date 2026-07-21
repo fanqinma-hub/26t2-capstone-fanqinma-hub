@@ -8,6 +8,7 @@ import { brandAssets } from '@/constants/brand-assets';
 import { reportDemoFixture } from '@/fixtures/report-demo.fixture';
 import { useSession } from '@/session';
 import { BrandColors, ComponentSizes, isTablet, Radii, SemanticColors, Spacing, Typography } from '@/theme';
+import type { ResponseTier } from '@/types/activity.types';
 import type { SpeechAttempt } from '@/types/session.types';
 import { formatResponseTier } from '@/utils/activity-response';
 
@@ -17,9 +18,10 @@ const tierDisplay = {
   noun_only: { label: 'No size word detected', tier: 'Tier 1' },
   adjective_used: { label: 'One size word detected', tier: 'Tier 2' },
   rich_description: { label: 'Comparative or rich size description', tier: 'Tier 3' },
-} as const satisfies Record<SpeechAttempt['tier'], { label: string; tier: string }>;
+} as const satisfies Record<ResponseTier, { label: string; tier: string }>;
 
 const reportContentMaxWidth = isTablet ? 900 : ComponentSizes.contentMaxWidth;
+const emptySessionAttempts: readonly SpeechAttempt[] = [];
 
 const reportReferenceLinks = [
   {
@@ -36,20 +38,22 @@ export default function ReportScreen() {
   const [audience, setAudience] = useState<ReportAudience>('parent');
   const [therapistNote, setTherapistNote] = useState<string>(reportDemoFixture.therapistNote);
   const router = useRouter();
-  const { state: sessionState } = useSession();
-  const hasSessionAttempts = sessionState.attempts.length > 0;
+  const { store } = useSession();
+  const sessionAttempts = store.session?.attempts ?? emptySessionAttempts;
+  const sessionPromptRecords = store.session?.promptRecords ?? [];
+  const hasSessionAttempts = sessionAttempts.length > 0;
   const currentHelpCount = hasSessionAttempts
-    ? sessionState.promptRecords.filter((record) => record.scaffoldUsed).length
+    ? sessionPromptRecords.reduce((sum, record) => sum + record.scaffoldTapCount, 0)
     : reportDemoFixture.helpCount;
   const tierSummaryRows = useMemo(() => {
     if (!hasSessionAttempts) return reportDemoFixture.tierSummary;
 
     return (['noun_only', 'adjective_used', 'rich_description'] as const).map((tier) => ({
-      count: sessionState.attempts.filter((attempt) => attempt.tier === tier).length,
+      count: sessionAttempts.filter((attempt) => attempt.tier === tier).length,
       label: tierDisplay[tier].label,
       tier: tierDisplay[tier].tier,
     }));
-  }, [hasSessionAttempts, sessionState.attempts]);
+  }, [hasSessionAttempts, sessionAttempts]);
 
   return (
     <SafeAreaView style={styles.screen}>
@@ -147,7 +151,7 @@ export default function ReportScreen() {
             <Text style={styles.cardTitle}>Current session captures</Text>
             {hasSessionAttempts ? (
               <View style={styles.attemptStack}>
-                {sessionState.attempts.map((attempt, index) => (
+                {sessionAttempts.map((attempt, index) => (
                   <View key={attempt.id} style={styles.attemptRow}>
                     <View style={styles.attemptHeader}>
                       <Text style={styles.attemptPrompt}>Q{index + 1}. {attempt.promptText}</Text>
@@ -155,7 +159,7 @@ export default function ReportScreen() {
                     </View>
                     <Text style={styles.attemptTranscript}>Child said: {attempt.transcript || 'No clear transcript captured'}</Text>
                     <Text style={styles.attemptMeta}>
-                      Status: {attempt.status} · Source: {attempt.source} · Size words: {attempt.detectedSizeWords.length ? attempt.detectedSizeWords.join(', ') : 'none'}
+                      Status: {attempt.status} · Source: {attempt.source} · Size words: {attempt.detectedKeywords.length ? attempt.detectedKeywords.join(', ') : 'none'}
                     </Text>
                   </View>
                 ))}

@@ -8,16 +8,16 @@ import {
   Spacing,
   Typography,
 } from '@/theme';
+import type { ActivityPromptDefinition } from '@/types/activity.types';
 
 type SessionStateInspectorProps = {
   activeQuestionId: string;
   onResetSession: () => void;
   onSelectQuestion: (questionId: string) => void;
-  questions: readonly {
-    id: string;
-    sequence: number;
-    koolPrompt: string;
-  }[];
+  questions: readonly Pick<
+    ActivityPromptDefinition,
+    'id' | 'sequence' | 'promptText'
+  >[];
 };
 
 function displayValue(value: string | number | null) {
@@ -30,13 +30,14 @@ export function SessionStateInspector({
   onSelectQuestion,
   questions,
 }: SessionStateInspectorProps) {
-  const { state } = useSession();
+  const { store } = useSession();
 
   if (!__DEV__) return null;
 
-  const latestAttempt = state.attempts[state.attempts.length - 1];
-  const activePrompt = state.promptRecords.find(
-    (record) => record.promptId === state.activePromptId,
+  const session = store.session;
+  const latestAttempt = session?.attempts.at(-1);
+  const activePrompt = session?.promptRecords.find(
+    (record) => record.promptId === activeQuestionId,
   );
 
   return (
@@ -47,7 +48,7 @@ export function SessionStateInspector({
         <View style={styles.headingCopy}>
           <Text style={styles.title}>Session State Inspector</Text>
           <Text style={styles.caption}>
-            Live in-memory data for Role 3 testing
+            Hydrated and persisted Role 3 session data
           </Text>
         </View>
         <Pressable
@@ -82,7 +83,7 @@ export function SessionStateInspector({
                     styles.questionButtonText,
                     isActive && styles.questionButtonTextActive,
                   ]}>
-                  {question.sequence}. {question.koolPrompt}
+                  {question.sequence}. {question.promptText}
                 </Text>
               </Pressable>
             );
@@ -93,34 +94,36 @@ export function SessionStateInspector({
       <View style={styles.summaryGrid}>
         <View style={styles.summaryItem}>
           <Text style={styles.summaryLabel}>Status</Text>
-          <Text style={styles.summaryValue}>{state.status}</Text>
+          <Text style={styles.summaryValue}>
+            {session?.status ?? store.hydrationStatus}
+          </Text>
         </View>
         <View style={styles.summaryItem}>
           <Text style={styles.summaryLabel}>Learning unit</Text>
-          <Text style={styles.summaryValue}>{state.unitId}</Text>
+          <Text style={styles.summaryValue}>{session?.unitId ?? 'none'}</Text>
         </View>
         <View style={styles.summaryItem}>
           <Text style={styles.summaryLabel}>Activity</Text>
           <Text style={styles.summaryValue}>
-            {displayValue(state.activeActivityId)}
+            {displayValue(session?.activeActivityId ?? null)}
           </Text>
         </View>
         <View style={styles.summaryItem}>
           <Text style={styles.summaryLabel}>Attempts</Text>
-          <Text style={styles.summaryValue}>{state.attempts.length}</Text>
+          <Text style={styles.summaryValue}>{session?.attempts.length ?? 0}</Text>
         </View>
       </View>
 
       <View style={styles.dataCard}>
         <Text style={styles.sectionTitle}>Active prompt</Text>
         <Text style={styles.dataText}>
-          ID: {displayValue(state.activePromptId)}
+          ID: {displayValue(activePrompt?.promptId ?? activeQuestionId)}
         </Text>
         <Text style={styles.dataText}>
-          Scaffold used: {activePrompt?.scaffoldUsed ? 'yes' : 'no'}
+          Scaffold taps: {activePrompt?.scaffoldTapCount ?? 0}
         </Text>
         <Text style={styles.dataText}>
-          Attempt IDs: {activePrompt?.attemptIds.join(', ') || 'none'}
+          Terminal attempt ID: {activePrompt?.terminalAttemptId ?? 'none'}
         </Text>
       </View>
 
@@ -133,13 +136,14 @@ export function SessionStateInspector({
             </Text>
             <Text style={styles.dataText}>
               Detected size words:{' '}
-              {latestAttempt.detectedSizeWords.join(', ') || 'none'}
+              {latestAttempt.detectedKeywords.join(', ') || 'none'}
             </Text>
             <Text style={styles.dataText}>
-              Tier: {latestAttempt.tier}
+              Tier: {latestAttempt.tier ?? 'none'}
             </Text>
             <Text style={styles.dataText}>
-              Target adjective: {latestAttempt.targetAdjectiveUsed ?? 'none'}
+              Primary words:{' '}
+              {latestAttempt.detectedPrimaryWords.join(', ') || 'none'}
             </Text>
             <Text style={styles.dataText}>
               Confidence:{' '}
@@ -162,7 +166,7 @@ export function SessionStateInspector({
       <View style={styles.jsonCard}>
         <Text style={styles.sectionTitle}>Full SessionState JSON</Text>
         <Text selectable style={styles.jsonText}>
-          {JSON.stringify(state, null, 2)}
+          {JSON.stringify(store, null, 2)}
         </Text>
       </View>
     </View>

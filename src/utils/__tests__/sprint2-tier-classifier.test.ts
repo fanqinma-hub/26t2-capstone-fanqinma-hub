@@ -4,16 +4,21 @@ import type { ActivityPromptDefinition } from '../../types/activity.types';
 const mockPrompt: ActivityPromptDefinition = {
   id: 'activity-1:watermelon',
   sequence: 1,
-  koolPrompt: 'What is that big green thing?',
-  helpPrompt: 'It is a watermelon.',
+  kind: 'open',
+  promptText: 'What is that big green thing?',
+  repromptText: 'What is the big green fruit?',
+  helpText: 'It is a watermelon.',
   recastText: 'A big watermelon!',
   targetAdjectives: ['big', 'gigantic'],
   expectedNouns: ['watermelon'],
-  acceptedResponses: {
-    minimum: ['watermelon'],
-    target: ['a big watermelon'],
-    bonus: ['a huge gigantic watermelon']
-  }
+  nounAliases: ['melon'],
+  focusTargetIds: ['activity-1:watermelon'],
+  readinessEligible: true,
+  acceptedExamples: {
+    tier1: ['watermelon'],
+    tier2: ['a big watermelon'],
+    tier3: ['a huge gigantic watermelon'],
+  },
 };
 
 describe('Sprint 2 Tier Classifier & Levenshtein Algorithm', () => {

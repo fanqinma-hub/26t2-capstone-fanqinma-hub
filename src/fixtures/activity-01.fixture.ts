@@ -1,213 +1,94 @@
 import type { ActivityHotspot } from '@/components/activity';
+import { sceneAssetManifest } from '@/components/activity/scene-asset-manifest';
+import { getSizeWordsActivity, sizeWordsUnit } from '@/content/size-words';
 import { clientScenes } from '@/constants/client-assets';
-import type { ActivityDefinition } from '@/types/activity.types';
+import type {
+  ActivityDefinition,
+  ActivityPromptDefinition,
+} from '@/types/activity.types';
 
 export const sizeWordsUnitMetadata = {
-  id: 'size-words-unit',
-  contentVersion: '2026-06-25',
-  title: 'Big, Small and Everything in Between!',
-  totalActivities: 5,
+  id: sizeWordsUnit.id,
+  contentVersion: sizeWordsUnit.contentVersion,
+  title: sizeWordsUnit.title,
+  totalActivities: sizeWordsUnit.activities.length,
 } as const;
 
+const canonicalActivity01 = getSizeWordsActivity('activity-1');
+if (!canonicalActivity01) throw new Error('Activity 1 is missing from sizeWordsUnit');
+
+type LegacyPromptAliases = {
+  koolPrompt: string;
+  helpPrompt: string;
+  acceptedResponses: {
+    minimum: readonly string[];
+    target: readonly string[];
+    bonus: readonly string[];
+  };
+  hotspotId: string;
+  acceptsAnyResponse?: boolean;
+};
+
+type Activity01FixturePrompt = ActivityPromptDefinition & LegacyPromptAliases;
+
+type Activity01FixtureDefinition = Omit<ActivityDefinition, 'prompts'> & {
+  prompts: readonly Activity01FixturePrompt[];
+  slug: 'the-kitchen-bench';
+  scene: {
+    assetKey: 'activity1';
+    source: typeof clientScenes.activity1.source;
+    accessibilityLabel: string;
+  };
+  introMessage: string;
+  hotspots: readonly {
+    id: string;
+    label: string;
+    objectName: string;
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+    helpPrompt: string;
+  }[];
+};
+
 /**
- * Role 3 source data for Activity 1.
- *
- * The prompts, accepted responses and hotspots are content contracts. Role 4
- * owns conversation progression and Role 5 owns STT and tier classification.
+ * Temporary Sprint 1/Role 1 demo adapter. Canonical content lives only in
+ * sizeWordsUnit; this object adds legacy presentation aliases without defining
+ * another ActivityDefinition schema.
  */
-export const activity01Definition = {
-  id: '1',
+export const activity01Definition: Activity01FixtureDefinition = {
+  ...canonicalActivity01,
   slug: 'the-kitchen-bench',
-  order: 1,
-  title: 'Activity 1: The Kitchen Bench',
   scene: {
     assetKey: 'activity1',
     source: clientScenes.activity1.source,
     accessibilityLabel:
-      'A kitchen bench with a very large watermelon, a tiny strawberry, a large cooking pot and a tiny teacup.',
+      sceneAssetManifest['kitchen-bench'].accessibilityLabel,
   },
-  runtimeSeconds: 90,
-  targetAdjectives: ['big', 'tiny', 'small', 'huge'],
-  teachingTechnique: 'Maximal contrast pair: big versus tiny',
-  introMessage:
-    'Wow, look at this kitchen! Something is a little bit… silly here! Can you see what I mean? Tell me what you see!',
-  exchanges: [
-    {
-      id: 'activity-1-exchange-fruit',
-      title: 'Watermelon and strawberry',
-      approximateDurationSeconds: 45,
-      promptIds: [
-        'activity-1-watermelon',
-        'activity-1-strawberry',
-        'activity-1-size-contrast',
-      ],
+  introMessage: canonicalActivity01.introText,
+  prompts: canonicalActivity01.prompts.map((prompt) => ({
+    ...prompt,
+    koolPrompt: prompt.promptText,
+    helpPrompt: prompt.helpText,
+    acceptedResponses: {
+      minimum: prompt.acceptedExamples.tier1,
+      target: prompt.acceptedExamples.tier2,
+      bonus: prompt.acceptedExamples.tier3,
     },
-    {
-      id: 'activity-1-exchange-kitchenware',
-      title: 'Pot and teacup',
-      approximateDurationSeconds: 30,
-      promptIds: ['activity-1-pot', 'activity-1-teacup'],
-    },
-    {
-      id: 'activity-1-exchange-wrap-up',
-      title: 'Size words wrap-up',
-      approximateDurationSeconds: 15,
-      promptIds: ['activity-1-wrap-up'],
-    },
-  ],
-  prompts: [
-    {
-      id: 'activity-1-watermelon',
-      sequence: 1,
-      koolPrompt: 'What’s that big green thing on the left?',
-      expectedNouns: ['watermelon'],
-      targetAdjectives: ['big', 'huge', 'gigantic'],
-      acceptedResponses: {
-        minimum: ['watermelon'],
-        target: ['a big watermelon'],
-        bonus: ['a huge watermelon', "it's gigantic"],
-      },
-      recastText: 'A BIG watermelon! So big!',
-      helpPrompt: 'Look at the big green fruit on the left. What is it?',
-      hotspotId: 'watermelon',
-    },
-    {
-      id: 'activity-1-strawberry',
-      sequence: 2,
-      koolPrompt:
-        'And right next to it — look at that tiny red one. What is it?',
-      expectedNouns: ['strawberry'],
-      targetAdjectives: ['tiny', 'small'],
-      acceptedResponses: {
-        minimum: ['strawberry'],
-        target: ['a tiny strawberry'],
-        bonus: ["it's really small", 'super tiny'],
-      },
-      recastText:
-        'A tiny little strawberry! Look how TINY it is next to that big watermelon!',
-      helpPrompt: 'Can you see the tiny red fruit beside the watermelon?',
-      hotspotId: 'strawberry',
-    },
-    {
-      id: 'activity-1-size-contrast',
-      sequence: 3,
-      koolPrompt: 'Which one is bigger — the watermelon or the strawberry?',
-      expectedNouns: ['watermelon', 'strawberry'],
-      targetAdjectives: ['big', 'huge', 'tiny', 'small'],
-      acceptedResponses: {
-        minimum: ['watermelon', 'that one'],
-        target: ['the big watermelon'],
-        bonus: [
-          'the watermelon is bigger',
-          'the watermelon is huge and the strawberry is tiny',
-        ],
-      },
-      recastText:
-        'Yes! The watermelon is BIG and the strawberry is tiny. What a funny kitchen!',
-      helpPrompt: 'Point to the one that takes up the most space.',
-      hotspotId: 'watermelon',
-    },
-    {
-      id: 'activity-1-pot',
-      sequence: 4,
-      koolPrompt:
-        'And over here — there’s something you cook with. What do you think that is?',
-      expectedNouns: ['pot', 'cooking pot'],
-      targetAdjectives: ['big', 'huge'],
-      acceptedResponses: {
-        minimum: ['pot'],
-        target: ['a big pot'],
-        bonus: ['a really huge cooking pot'],
-      },
-      recastText: 'A big cooking pot! Great spotting!',
-      helpPrompt: 'Look for the big thing with a lid and two handles.',
-      hotspotId: 'cooking-pot',
-    },
-    {
-      id: 'activity-1-teacup',
-      sequence: 5,
-      koolPrompt: 'And right next to it — what’s that tiny little thing?',
-      expectedNouns: ['cup', 'teacup'],
-      targetAdjectives: ['tiny', 'small'],
-      acceptedResponses: {
-        minimum: ['cup', 'teacup'],
-        target: ['a tiny teacup'],
-        bonus: ['a tiny little teacup', "it's so small"],
-      },
-      recastText: 'A tiny teacup! Imagine trying to make soup in a teacup — it’d be SO tiny! Ha!',
-      helpPrompt: 'Look beside the cooking pot for a very small cup.',
-      hotspotId: 'teacup',
-    },
-    {
-      id: 'activity-1-wrap-up',
-      sequence: 6,
-      koolPrompt:
-        'You noticed so many sizes! What was the biggest thing you saw on that bench?',
-      expectedNouns: ['watermelon'],
-      targetAdjectives: ['big', 'huge'],
-      acceptedResponses: {
-        minimum: ['watermelon'],
-        target: ['the big watermelon'],
-        bonus: ['the huge green watermelon'],
-      },
-      acceptsAnyResponse: true,
-      recastText:
-        'Yes! This kitchen has BIG things and tiny things everywhere!',
-      helpPrompt: 'Think about the object that filled most of the left side.',
-      hotspotId: 'watermelon',
-    },
-  ],
-  hotspots: [
-    {
-      id: 'watermelon',
-      label: 'Watermelon clue',
-      objectName: 'watermelon',
-      x: 0.05,
-      y: 0.15,
-      width: 0.46,
-      height: 0.64,
-      helpPrompt: 'Look at the very large green fruit on the left.',
-    },
-    {
-      id: 'strawberry',
-      label: 'Strawberry clue',
-      objectName: 'strawberry',
-      x: 0.46,
-      y: 0.71,
-      width: 0.05,
-      height: 0.09,
-      helpPrompt: 'Look for the tiny red fruit beside the watermelon.',
-    },
-    {
-      id: 'cooking-pot',
-      label: 'Cooking pot clue',
-      objectName: 'cooking pot',
-      x: 0.53,
-      y: 0.4,
-      width: 0.32,
-      height: 0.39,
-      helpPrompt: 'Look for the large pot with a lid and handles.',
-    },
-    {
-      id: 'teacup',
-      label: 'Teacup clue',
-      objectName: 'teacup',
-      x: 0.83,
-      y: 0.68,
-      width: 0.1,
-      height: 0.12,
-      helpPrompt: 'Look for the tiny cup beside the cooking pot.',
-    },
-  ],
-  rewardCheckpoint: {
-    id: 'coin-checkpoint-1',
-    kind: 'coin',
-    afterPromptId: 'activity-1-wrap-up',
-    koolMessage: 'You’re such a great noticer. Here’s your coin!',
-  },
-  clinicalNote:
-    'Kool does not mark a noun-only response as wrong. Kool recasts it with a size adjective.',
-} as const satisfies ActivityDefinition;
+    hotspotId: prompt.focusTargetIds[0].split(':')[1],
+    acceptsAnyResponse: prompt.acceptedExamples.tier1.includes(
+      'any spoken response',
+    ),
+  })),
+  hotspots: sceneAssetManifest['kitchen-bench'].focusTargets.map((focus) => ({
+    id: focus.id.split(':')[1],
+    label: focus.label,
+    objectName: focus.objectName,
+    ...focus.rect,
+    helpPrompt: `Look at the ${focus.objectName}.`,
+  })),
+};
 
 export type ActivityScreenContentAdapter = {
   activityId: string;
@@ -218,14 +99,13 @@ export type ActivityScreenContentAdapter = {
   hotspots: readonly ActivityHotspot[];
 };
 
-/** Maps ActivityDefinition data into the existing Role 2 screen props. */
 export function toActivityScreenContent(
-  activity: ActivityDefinition,
+  activity: Activity01FixtureDefinition,
 ): ActivityScreenContentAdapter {
   return {
     activityId: activity.id,
     title: activity.title,
-    sceneSource: activity.scene.source as typeof clientScenes.activity1.source,
+    sceneSource: activity.scene.source,
     currentActivity: activity.order,
     totalActivities: sizeWordsUnitMetadata.totalActivities,
     hotspots: activity.hotspots.map(({ id, label, x, y, width, height }) => ({
@@ -249,23 +129,20 @@ export const activity01SessionSeed = {
   promptIds: activity01Definition.prompts.map((prompt) => prompt.id),
 } as const;
 
-/** Maps structured prompt content into the replaceable Sprint 1 demo flow. */
-export function toActivity01DemoCopy(
-  prompt: ActivityDefinition['prompts'][number],
-) {
+export function toActivity01DemoCopy(prompt: Activity01FixturePrompt) {
   const hotspot = activity01Definition.hotspots.find(
     (candidate) => candidate.id === prompt.hotspotId,
   );
 
   return {
-    intro: activity01Definition.introMessage,
-    prompt: prompt.koolPrompt,
+    intro: activity01Definition.introText,
+    prompt: prompt.promptText,
     listening: "I'm listening. Tell me what you can see.",
     gentleCue: 'Take your time. Look closely at the picture.',
-    reprompt: prompt.helpPrompt,
+    reprompt: prompt.repromptText,
     tapHelpAvailable: 'Need a clue? Tap the little question mark.',
-    cluePresented: hotspot?.helpPrompt ?? prompt.helpPrompt,
-    finalListening: prompt.helpPrompt,
+    cluePresented: hotspot?.helpPrompt ?? prompt.helpText,
+    finalListening: prompt.helpText,
     success: prompt.recastText,
   } as const;
 }

@@ -1,83 +1,194 @@
-import type { ResponseTier, SizeWordKeyword, TargetAdjective } from './activity.types';
+import type {
+  ActivityId,
+  PromptId,
+  ResponseTier,
+  SizeWordKeyword,
+  TargetAdjective,
+} from './activity.types';
+import type {
+  DeliveryKind,
+  DeliveryStatus,
+  SpeechErrorCode,
+  SpeechOperationId,
+} from './speech.types';
 
-export type TranscriptSource = 'azure' | 'manual' | 'mock' | 'native' | 'web';
-
-export type SpeechAttemptStatus =
+export type IsoTimestamp = string;
+export type SessionMode = 'live' | 'fixture';
+export type AttemptStatus =
   | 'captured'
-  | 'mocked'
   | 'no_match'
   | 'cancelled'
-  | 'error';
+  | 'error'
+  | 'mocked';
 
-export type MatchedSizeWord = {
-  heard: string;
-  canonical: SizeWordKeyword;
-  confidence: number | null;
-};
-
-/**
- * Shared boundary between the future voice pipeline and Role 3 session state.
- * Raw audio and raw Azure response payloads are intentionally excluded.
- */
-export type SpeechAttempt = {
+export interface SpeechAttempt {
   id: string;
-  activityId: string;
-  promptId: string;
+  activityId: ActivityId;
+  promptId: PromptId;
   promptText: string;
   transcript: string;
   normalizedTranscript: string;
-  detectedSizeWords: readonly SizeWordKeyword[];
-  matchedVariants: readonly MatchedSizeWord[];
-  tier: ResponseTier;
-  targetAdjectiveUsed: TargetAdjective | null;
-  scaffoldUsed: boolean;
   confidence: number | null;
-  source: TranscriptSource;
-  status: SpeechAttemptStatus;
-  timestamp: string;
-};
+  status: AttemptStatus;
+  source: 'azure' | 'mock';
+  errorCode: SpeechErrorCode | null;
+  tier: ResponseTier | null;
+  detectedKeywords: readonly SizeWordKeyword[];
+  detectedPrimaryWords: readonly TargetAdjective[];
+  isSpontaneous: boolean;
+  scaffoldStage: 0 | 1 | 2 | 3;
+  createdAt: IsoTimestamp;
+}
 
-export type SessionPromptRecord = {
-  activityId: string;
-  promptId: string;
+export interface DeliveryEvent {
+  id: string;
+  operationId: SpeechOperationId;
+  activityId: ActivityId;
+  promptId: PromptId;
+  kind: DeliveryKind;
+  text: string;
+  words: readonly SizeWordKeyword[];
+  primaryWords: readonly TargetAdjective[];
+  status: DeliveryStatus;
+  completedAt: IsoTimestamp;
+}
+
+export interface PromptRecord {
+  activityId: ActivityId;
+  promptId: PromptId;
   promptText: string;
-  openedAt: string;
-  scaffoldUsed: boolean;
-  attemptIds: readonly string[];
-};
+  openedAt: IsoTimestamp;
+  closedAt: IsoTimestamp | null;
+  closeReason: 'answered' | 'skipped' | 'timed_out' | 'error' | null;
+  terminalAttemptId: string | null;
+  scaffoldTapCount: number;
+  replayTapCount: number;
+}
 
-export type SessionStatus = 'idle' | 'in_progress' | 'completed';
+export interface ActivityRecord {
+  activityId: ActivityId;
+  startedAt: IsoTimestamp;
+  completedAt: IsoTimestamp | null;
+  durationMs: number;
+}
 
-export type SessionState = {
-  sessionId: string | null;
-  unitId: string;
+export type RewardGrant =
+  | {
+      checkpointId: 'coin-after-activity-1';
+      activityId: 'activity-1';
+      grantedAt: IsoTimestamp;
+    }
+  | {
+      checkpointId: 'coin-after-activity-3';
+      activityId: 'activity-3';
+      grantedAt: IsoTimestamp;
+    }
+  | {
+      checkpointId: 'coin-after-activity-5';
+      activityId: 'activity-5';
+      grantedAt: IsoTimestamp;
+    };
+
+export interface ReportMetadata {
+  childName: string;
+  childAge: number;
+  therapistName: string;
+  therapistNote: string;
+  nextStep: string;
+}
+
+export interface SessionState {
+  schemaVersion: 1;
+  mode: SessionMode;
+  sessionId: string;
+  unitId: 'size-words-unit';
   contentVersion: string;
-  status: SessionStatus;
-  activeActivityId: string | null;
-  activePromptId: string | null;
-  startedAt: string | null;
-  completedAt: string | null;
-  promptRecords: readonly SessionPromptRecord[];
+  unitAttemptNumber: number;
+  status: 'in_progress' | 'completed';
+  startedAt: IsoTimestamp;
+  completedAt: IsoTimestamp | null;
+  activeActivityId: ActivityId | null;
+  activityRecords: readonly ActivityRecord[];
+  promptRecords: readonly PromptRecord[];
   attempts: readonly SpeechAttempt[];
-};
+  deliveries: readonly DeliveryEvent[];
+  rewards: readonly RewardGrant[];
+  reportMetadata: ReportMetadata;
+}
 
-export type SessionAction =
+export interface SessionStoreState {
+  hydrationStatus: 'loading' | 'ready' | 'error';
+  hydrationError: string | null;
+  session: SessionState | null;
+}
+
+export type SessionEvent =
   | {
-      type: 'START_SESSION';
-      sessionId: string;
-      unitId: string;
-      contentVersion: string;
-      startedAt: string;
+      type: 'UNIT_STARTED';
+      payload: {
+        sessionId: string;
+        mode: SessionMode;
+        contentVersion: string;
+        startedAt: IsoTimestamp;
+        reportMetadata: ReportMetadata;
+      };
     }
-  | { type: 'SET_ACTIVE_ACTIVITY'; activityId: string }
   | {
-      type: 'OPEN_PROMPT';
-      activityId: string;
-      promptId: string;
-      promptText: string;
-      openedAt: string;
+      type: 'ACTIVITY_STARTED';
+      payload: { activityId: ActivityId; startedAt: IsoTimestamp };
     }
-  | { type: 'MARK_SCAFFOLD_USED'; promptId: string }
-  | { type: 'RECORD_ATTEMPT'; attempt: SpeechAttempt }
-  | { type: 'COMPLETE_SESSION'; completedAt: string }
-  | { type: 'RESET_SESSION' };
+  | {
+      type: 'ACTIVITY_COMPLETED';
+      payload: { activityId: ActivityId; completedAt: IsoTimestamp };
+    }
+  | {
+      type: 'PROMPT_OPENED';
+      payload: {
+        activityId: ActivityId;
+        promptId: PromptId;
+        promptText: string;
+        openedAt: IsoTimestamp;
+      };
+    }
+  | {
+      type: 'PROMPT_CLOSED';
+      payload: {
+        activityId: ActivityId;
+        promptId: PromptId;
+        closedAt: IsoTimestamp;
+        closeReason: NonNullable<PromptRecord['closeReason']>;
+        terminalAttemptId: string | null;
+      };
+    }
+  | {
+      type: 'SCAFFOLD_TAPPED';
+      payload: {
+        activityId: ActivityId;
+        promptId: PromptId;
+        createdAt: IsoTimestamp;
+      };
+    }
+  | {
+      type: 'REPLAY_TAPPED';
+      payload: {
+        activityId: ActivityId;
+        promptId: PromptId;
+        createdAt: IsoTimestamp;
+      };
+    }
+  | { type: 'ATTEMPT_RECORDED'; payload: { attempt: SpeechAttempt } }
+  | { type: 'DELIVERY_RECORDED'; payload: { delivery: DeliveryEvent } }
+  | { type: 'REWARD_GRANTED'; payload: { grant: RewardGrant } }
+  | { type: 'REPORT_METADATA_UPDATED'; payload: Partial<ReportMetadata> }
+  | { type: 'UNIT_COMPLETED'; payload: { completedAt: IsoTimestamp } }
+  | { type: 'SESSION_RESET' };
+
+export type SessionDispatch = (event: SessionEvent) => Promise<void>;
+
+export interface SessionContextValue {
+  store: SessionStoreState;
+  dispatch: SessionDispatch;
+}
+
+/** @deprecated Sprint 1 compatibility only. New code must use SpeechAttempt.source. */
+export type TranscriptSource = 'azure' | 'mock' | 'manual' | 'native' | 'web';

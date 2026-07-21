@@ -1,10 +1,10 @@
-import type { ActivityPromptDefinition } from '@/types/activity.types';
+import type { ActivityId, ActivityPromptDefinition } from '@/types/activity.types';
 import type { SpeechAttempt } from '@/types/session.types';
 
 import type { Activity1DemoOutcome } from './useActivity1DemoFlow';
 
 type CreateDevelopmentMockAttemptOptions = {
-  activityId: string;
+  activityId: ActivityId;
   id: string;
   outcome: Activity1DemoOutcome;
   prompt: ActivityPromptDefinition;
@@ -35,24 +35,25 @@ export function createDevelopmentMockAttempt({
       id,
       activityId,
       promptId: prompt.id,
-      promptText: prompt.koolPrompt,
+      promptText: prompt.promptText,
       transcript: '',
       normalizedTranscript: '',
-      detectedSizeWords: [],
-      matchedVariants: [],
-      tier: 'noun_only',
-      targetAdjectiveUsed: null,
-      scaffoldUsed,
       confidence: null,
       source: 'mock',
       status: 'no_match',
-      timestamp,
+      errorCode: 'no_match',
+      tier: null,
+      detectedKeywords: [],
+      detectedPrimaryWords: [],
+      isSpontaneous: !scaffoldUsed,
+      scaffoldStage: scaffoldUsed ? 2 : 0,
+      createdAt: timestamp,
     };
   }
 
   const transcript =
-    prompt.acceptedResponses.target[0] ??
-    prompt.acceptedResponses.bonus[0] ??
+    prompt.acceptedExamples.tier2[0] ??
+    prompt.acceptedExamples.tier3[0] ??
     prompt.recastText;
   const targetAdjective = prompt.targetAdjectives[0] ?? null;
 
@@ -60,25 +61,18 @@ export function createDevelopmentMockAttempt({
     id,
     activityId,
     promptId: prompt.id,
-    promptText: prompt.koolPrompt,
+    promptText: prompt.promptText,
     transcript,
     normalizedTranscript: normaliseTranscript(transcript),
-    detectedSizeWords: targetAdjective ? [targetAdjective] : [],
-    matchedVariants: targetAdjective
-      ? [
-          {
-            heard: targetAdjective,
-            canonical: targetAdjective,
-            confidence: 0.98,
-          },
-        ]
-      : [],
-    tier: 'adjective_used',
-    targetAdjectiveUsed: targetAdjective,
-    scaffoldUsed,
     confidence: 0.98,
     source: 'mock',
     status: 'mocked',
-    timestamp,
+    errorCode: null,
+    tier: targetAdjective ? 'adjective_used' : 'noun_only',
+    detectedKeywords: targetAdjective ? [targetAdjective] : [],
+    detectedPrimaryWords: targetAdjective ? [targetAdjective] : [],
+    isSpontaneous: !scaffoldUsed,
+    scaffoldStage: scaffoldUsed ? 2 : 0,
+    createdAt: timestamp,
   };
 }
