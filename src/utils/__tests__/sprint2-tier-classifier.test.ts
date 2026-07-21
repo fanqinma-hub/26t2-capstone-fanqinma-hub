@@ -92,5 +92,70 @@ describe('Sprint 2 Tier Classifier & Levenshtein Algorithm', () => {
       expect(result.detectedKeywords).toEqual(['huge', 'gigantic']);
       expect(result.detectedPrimaryWords).toEqual(['huge', 'gigantic']);
     });
+
+    // ── False-positive prevention tests ─────────────────────────────────────
+    // Contract requirement: deterministic classification with no false positives.
+    describe('false-positive prevention', () => {
+      const falsePositiveShortWords = ['pig', 'dig', 'bag', 'bit', 'sit', 'hug', 'bug', 'run', 'mad'];
+
+      it.each(falsePositiveShortWords)(
+        'short word "%s" does NOT match any size keyword (≤3 chars exact-match guard)',
+        (word) => {
+          const result = classifySizeWords({
+            prompt: mockPrompt,
+            transcript: `I see a ${word}`,
+          });
+          expect(result.tier).toBe('noun_only');
+          expect(result.detectedKeywords).toEqual([]);
+        },
+      );
+
+      const falsePositiveLongWords = [
+        'tall',      // sim to 'small' = 3/5 = 0.6 ≤ 0.65
+        'thin',      // no close match
+        'giggle',    // sim to 'gigantic' = 3/8 ≈ 0.375
+        'ticking',   // no close match
+        'running',   // no close match
+        'hugging',   // sim to 'huge' = 3/7 ≈ 0.43, sim to 'huger' = 4/7 ≈ 0.57
+        'biking',    // no close match
+      ];
+
+      it.each(falsePositiveLongWords)(
+        'long word "%s" does NOT match any size keyword (below 0.65 threshold)',
+        (word) => {
+          const result = classifySizeWords({
+            prompt: mockPrompt,
+            transcript: `I see a ${word} thing`,
+          });
+          expect(result.detectedKeywords).toEqual([]);
+          expect(result.tier).toBe('noun_only');
+        },
+      );
+
+      it('common child utterance without size words stays Tier 1', () => {
+        const noSizeWordUtterances = [
+          'I see a dog',
+          'that is a red ball',
+          'the cat is sleeping',
+          'I like the blue one',
+          'look at the pretty flower',
+        ];
+        for (const utterance of noSizeWordUtterances) {
+          const result = classifySizeWords({ prompt: mockPrompt, transcript: utterance });
+          expect(result.tier).toBe('noun_only');
+          expect(result.detectedKeywords).toEqual([]);
+        }
+      });
+
+      it('boundary similarity exactly at 0.65 is rejected (threshold is strictly >)', () => {
+        // 'tall' vs 'small': distance=2, maxLen=5, sim=3/5=0.6 → rejected
+        // 'smill' vs 'small': distance=1, maxLen=5, sim=4/5=0.8 → accepted (sanity check)
+        const rejected = classifySizeWords({ prompt: mockPrompt, transcript: 'a tall thing' });
+        expect(rejected.detectedKeywords).toEqual([]);
+
+        const accepted = classifySizeWords({ prompt: mockPrompt, transcript: 'a smill thing' });
+        expect(accepted.detectedKeywords).toEqual(['small']);
+      });
+    });
   });
 });

@@ -5,11 +5,59 @@ import type {
   RecognitionResult,
   DeliveryResult,
   SpeechOperationId,
+  SpeechErrorCode,
   DeliveryKind,
   AzureSpeechRuntimeConfig,
   SpeechAdapterInitResult,
 } from '../../types/speech.types';
 import type { SizeWordKeyword, TargetAdjective } from '../../types/activity.types';
+
+// ── Child-friendly TTS voice parameters ──────────────────────────────────────
+// Tuned for a 6–8 year-old: slightly slower rate, warmer pitch, clear volume.
+// Matches the Sprint 1 koolSpeech.ts style (rate: 0.9, pitch: 1.1).
+const KOOL_VOICE_NAME = 'en-AU-NatashaNeural';
+const KOOL_TTS_RATE = '0.9';      // 90% of normal speed
+const KOOL_TTS_PITCH = '+10%';    // slightly higher for warmth
+const KOOL_TTS_VOLUME = 'loud';   // clear for children
+
+/**
+ * Builds an SSML document for Azure Neural TTS with fixed prosody.
+ * XML-escapes the text to prevent injection from user-facing content.
+ */
+function buildKoolSsml(text: string): string {
+  const escaped = text
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&apos;');
+  return [
+    '<speak version="1.0" xmlns="http://www.w3.org/2001/10/synthesis" xml:lang="en-AU">',
+    `  <voice name="${KOOL_VOICE_NAME}">`,
+    `    <prosody rate="${KOOL_TTS_RATE}" pitch="${KOOL_TTS_PITCH}" volume="${KOOL_TTS_VOLUME}">`,
+    `      ${escaped}`,
+    '    </prosody>',
+    '  </voice>',
+    '</speak>',
+  ].join('\n');
+}
+
+/**
+ * Maps a raw Azure SDK / browser error to the contract SpeechErrorCode.
+ * Provides finer granularity than the previous inline check.
+ */
+function mapAzureError(err: any): SpeechErrorCode {
+  if (err?.name === 'NotAllowedError') return 'permission_denied';
+  if (err?.name === 'NotFoundError') return 'unsupported';
+  const msg = (err?.message ?? '').toLowerCase();
+  if (msg.includes('network') || msg.includes('websocket') || msg.includes('connection'))
+    return 'network';
+  if (msg.includes('timeout') || msg.includes('timed out'))
+    return 'timeout';
+  if (msg.includes('cancelled') || msg.includes('canceled'))
+    return 'cancelled';
+  return 'service';
+}
 
 export class AzureSpeechAdapter implements SpeechAdapter {
   readonly capability = 'live-azure';
@@ -24,13 +72,16 @@ export class AzureSpeechAdapter implements SpeechAdapter {
   private audioCtx: AudioContext | null = null;
   private audioLevelInterval: any = null;
 
-  // Settle transcript storage
+  // Settle transcript and confidence storage
   private currentTranscript = '';
+  private lastConfidence: number | null = null;
 
   constructor(config: AzureSpeechRuntimeConfig) {
     this.speechConfig = SpeechSDK.SpeechConfig.fromSubscription(config.subscriptionKey, config.region);
-    // Custom child-friendly, less robotic en-AU female voice:
-    this.speechConfig.speechSynthesisVoiceName = 'en-AU-NatashaNeural';
+    // STT: explicit en-AU locale for Australian English child speech
+    this.speechConfig.speechRecognitionLanguage = 'en-AU';
+    // TTS: child-friendly en-AU Neural voice (SSML controls rate/pitch/volume)
+    this.speechConfig.speechSynthesisVoiceName = KOOL_VOICE_NAME;
   }
 
   async startListening(input: {
@@ -44,6 +95,7 @@ export class AzureSpeechAdapter implements SpeechAdapter {
 
       this.activeOperationId = input.operationId;
       this.currentTranscript = '';
+      this.lastConfidence = null;
 
       // Initialize Web Analyser for Audio Level Meter
       if (input.onAudioLevel) {
@@ -88,6 +140,22 @@ export class AzureSpeechAdapter implements SpeechAdapter {
       recognizer.recognized = (s, e) => {
         if (this.activeOperationId === input.operationId && e.result.text) {
           this.currentTranscript += ' ' + e.result.text;
+
+          // Extract real confidence from Azure SDK JSON response
+          try {
+            const jsonStr = e.result.properties?.getProperty(
+              SpeechSDK.PropertyId.SpeechServiceResponse_JsonResult,
+            );
+            if (jsonStr) {
+              const parsed = JSON.parse(jsonStr);
+              const bestConfidence = parsed?.NBest?.[0]?.Confidence;
+              if (typeof bestConfidence === 'number') {
+                this.lastConfidence = bestConfidence;
+              }
+            }
+          } catch {
+            // Confidence extraction failed — leave previous value
+          }
         }
       };
 
@@ -108,7 +176,7 @@ export class AzureSpeechAdapter implements SpeechAdapter {
         ok: false,
         failure: {
           operationId: input.operationId,
-          code: err?.name === 'NotAllowedError' ? 'permission_denied' : 'service',
+          code: mapAzureError(err),
           message: err?.message || 'Failed to start Azure recognition.',
         },
       };
@@ -154,7 +222,7 @@ export class AzureSpeechAdapter implements SpeechAdapter {
         operationId,
         transcript: finalTranscript,
         normalizedTranscript: finalTranscript.toLowerCase().replace(/[.,\/#!$%\^&\*;:{}=\-_`~()?]/g, ''),
-        confidence: 0.95,
+        confidence: this.lastConfidence,
         status: finalTranscript ? 'captured' : 'no_match',
         source: 'azure',
       },
@@ -176,9 +244,11 @@ export class AzureSpeechAdapter implements SpeechAdapter {
       const synthesizer = new SpeechSDK.SpeechSynthesizer(this.speechConfig, undefined as any);
       this.currentSynthesizer = synthesizer;
 
+      // Use SSML for precise control over rate, pitch, and volume
+      const ssml = buildKoolSsml(input.text);
       const result = await new Promise<SpeechSDK.SpeechSynthesisResult>((resolve, reject) => {
-        synthesizer.speakTextAsync(
-          input.text,
+        synthesizer.speakSsmlAsync(
+          ssml,
           (res) => resolve(res),
           (err) => reject(new Error(err))
         );
@@ -216,7 +286,7 @@ export class AzureSpeechAdapter implements SpeechAdapter {
         ok: false,
         failure: {
           operationId: input.operationId,
-          code: 'service',
+          code: mapAzureError(err),
           message: err?.message || 'Azure speech synthesis failed.',
         },
       };

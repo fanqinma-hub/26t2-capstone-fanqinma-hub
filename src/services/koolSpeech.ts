@@ -1,3 +1,15 @@
+/**
+ * @file koolSpeech.ts
+ * @deprecated Sprint 1 legacy — local expo-speech TTS for Kool mascot.
+ *
+ * Sprint 2 formal flow uses `SpeechAdapter.speak()` from
+ * `src/services/speech/azure-speech.adapter.ts` (Azure Neural TTS with SSML).
+ * This file is retained ONLY for Sprint 1 demo compatibility and must NOT be
+ * called in the Sprint 2 production conversation flow.
+ *
+ * See: docs/sprint2-shared-contracts.md § 4 — "Do not use Web Speech or
+ * expo-speech as the successful demo provider."
+ */
 import * as Speech from 'expo-speech';
 
 // Tuned for a 6–8 y/o: a touch slower than natural and a slightly higher pitch
