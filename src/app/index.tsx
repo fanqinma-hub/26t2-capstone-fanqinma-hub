@@ -7,10 +7,7 @@ import { KoolMascot } from '@/components/child-ui';
 import { appRoutes } from '@/config/app-config';
 import { brandAssets } from '@/constants/brand-assets';
 import { clientUiAssets } from '@/constants/client-assets';
-import {
-  formalActivityDemoMode,
-  useFormalActivityDemoSession,
-} from '@/integration/formal-activity-demo';
+import { useFormalActivityDemoSession } from '@/integration/formal-activity-demo';
 import { BrandColors, clamp, ComponentSizes, isSmallPhone, Radii, SemanticColors, Spacing, Typography } from '@/theme';
 
 function getHomeLayout(width: number, height: number) {
@@ -117,18 +114,21 @@ export default function HomeScreen() {
               <Text style={styles.primaryButtonText}>Start activity</Text>
             </Pressable>
 
-            {!formalActivityDemoMode ? (
-              <Pressable
-                accessibilityRole="button"
-                onPress={() => router.push(appRoutes.report)}
-                style={({ pressed }) => [
-                  styles.secondaryButton,
-                  { minHeight: layout.buttonHeight },
-                  pressed && styles.pressed,
-                ]}>
-                <Text style={styles.secondaryButtonText}>View report</Text>
-              </Pressable>
-            ) : null}
+            <Pressable
+              accessibilityRole="button"
+              onPress={() => router.push(appRoutes.reportParent)}
+              style={({ pressed }) => [
+                styles.secondaryButton,
+                { minHeight: layout.buttonHeight },
+                pressed && styles.pressed,
+              ]}>
+              <Text
+                adjustsFontSizeToFit
+                numberOfLines={1}
+                style={styles.secondaryButtonText}>
+                View report
+              </Text>
+            </Pressable>
           </View>
         </View>
 
@@ -195,6 +195,8 @@ const styles = StyleSheet.create({
   secondaryButtonText: {
     ...Typography.button,
     color: BrandColors.marsala,
+    textAlign: 'center',
+    width: '100%',
   },
   pressed: {
     opacity: 0.8,

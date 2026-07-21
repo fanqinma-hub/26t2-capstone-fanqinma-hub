@@ -8,8 +8,10 @@ describe('Role 1 route and runtime configuration smoke test', () => {
   it('exposes the canonical application routes', () => {
     expect(appRoutes.home).toBe('/');
     expect(appRoutes.report).toBe('/report');
+    expect(appRoutes.reportParent).toBe('/report?audience=parent');
+    expect(appRoutes.reportTherapist).toBe('/report?audience=therapist');
     expect(appRoutes.reportFromActivityComplete).toBe(
-      '/report?from=activityComplete',
+      '/report?audience=parent',
     );
     expect(appRoutes.unitComplete).toBe('/unit-complete');
   });

@@ -5,7 +5,9 @@ export type ActivityRouteId = (typeof activityRouteIds)[number];
 export const appRoutes = {
   home: '/' as const,
   report: '/report' as const,
-  reportFromActivityComplete: '/report?from=activityComplete' as const,
+  reportParent: '/report?audience=parent' as const,
+  reportTherapist: '/report?audience=therapist' as const,
+  reportFromActivityComplete: '/report?audience=parent' as const,
   unitComplete: '/unit-complete' as const,
   activity: (activityId: ActivityRouteId) => `/activity/${activityId}` as const,
 };

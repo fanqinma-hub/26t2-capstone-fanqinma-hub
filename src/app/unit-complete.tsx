@@ -32,6 +32,9 @@ export default function UnitCompleteRoute() {
     resetDemo();
     router.replace(appRoutes.activity('1'));
   }, [resetDemo, router]);
+  const viewReport = useCallback(() => {
+    router.push(appRoutes.reportFromActivityComplete);
+  }, [router]);
   const backHome = useCallback(() => {
     resetDemo();
     router.replace(appRoutes.home);
@@ -63,10 +66,24 @@ export default function UnitCompleteRoute() {
         <View style={styles.actions}>
           <Pressable
             accessibilityRole="button"
-            onPress={restart}
+            onPress={viewReport}
             style={({ pressed }) => [
               styles.button,
               styles.primaryButton,
+              pressed && styles.pressed,
+            ]}>
+            <Text
+              adjustsFontSizeToFit
+              numberOfLines={1}
+              style={styles.buttonText}>
+              View report
+            </Text>
+          </Pressable>
+          <Pressable
+            accessibilityRole="button"
+            onPress={restart}
+            style={({ pressed }) => [
+              styles.button,
               pressed && styles.pressed,
             ]}>
             <Text style={styles.buttonText}>Restart demo</Text>
@@ -139,6 +156,8 @@ const styles = StyleSheet.create({
   buttonText: {
     ...Typography.button,
     color: SemanticColors.primaryText,
+    textAlign: 'center',
+    width: '100%',
   },
   pressed: {
     opacity: 0.76,
